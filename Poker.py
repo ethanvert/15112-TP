@@ -281,22 +281,22 @@ class Player:
                 hand = "Straight Flush"
                 score = Deck.getStraightFlushScore(numbers)
             elif 4 in numCounts:
-                hand = "Four of a Kind"
+                hand = "Flush"
                 score = Deck.getQuadsScore(numbers)
             elif 3 in numCounts and 2 in numCounts:
-                hand = "Full House"
+                hand = "Flush"
                 score = Deck.getFullHouseScore(numbers)
             elif len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
-                hand = "Straight"
+                hand = "Flush"
                 score = Deck.getStraightScore(numbers)
             elif 3 in numCounts:
-                hand = "Three of a Kind"
+                hand = "Flush"
                 score = Deck.getThreeOfAKindScore(numbers)
             elif 2 in numCounts and len(numCounts[2]) > 1:
-                hand = "Two Pair"
+                hand = "Flush"
                 score = Deck.getTwoPairScore(numbers)
             elif 2 in numCounts:
-                hand = "Pair"
+                hand = "Flush"
                 score = Deck.getPairScore(numbers)
             else:
                 hand = "Flush"
@@ -449,6 +449,7 @@ def game_playPreFlop(app):
 def game_playFlop(app):
     app.game.nextStage()
     app.board += app.game.dealFlop()
+    # game_drawBoard(app)
     print("--------------------")
     print(app.board)
     print(f"The pot has {app.game.pot} chips")  
@@ -459,6 +460,7 @@ def game_playFlop(app):
 def game_playTurn(app):
     app.game.nextStage()
     app.board.append(app.game.dealTurnOrRiver())
+    # game_drawBoard(app)
     print("--------------------")
     print(app.board)
     print(f"The pot has {app.game.pot} chips")
@@ -469,6 +471,7 @@ def game_playTurn(app):
 def game_playRiver(app):
     app.game.nextStage()
     app.board.append(app.game.dealTurnOrRiver())
+    #app_drawBoard
     print("--------------------")
     print(app.board)
     print(f"The pot has {app.game.pot} chips")
@@ -505,6 +508,12 @@ def game_drawCard(app, canvas, x, y):
     canvas.create_image(x, y, 
     image= ImageTk.PhotoImage(app.scaleImage(app.cardImage, 1/10)))
 
+def game_drawBoard(app, canvas):
+    if app.board == [ ]:
+        pass
+    else:
+        pass
+
 def game_drawNames(app, canvas):
     index = 0
     for name in app.game.players:
@@ -517,6 +526,7 @@ def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)
     game_drawCard(app, canvas, app.width/10, app.height/2)
     game_drawNames(app, canvas)
+    game_drawBoard()
 
     for i in range(len(app.game.players)):
         game_drawCard(app, canvas, app.width/2, 0+i*app.height)
