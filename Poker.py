@@ -1,3 +1,5 @@
+# Note: I got heavy inspiration for the hand scoring algo from https://towardsdatascience.com/poker-with-python-how-to-score-all-hands-in-texas-holdem-6fd750ef73d
+
 from cmu_112_graphics import *
 import random
 import math
@@ -40,6 +42,7 @@ class PokerGame:
 
     def call(self, amount):
         self.pot += amount
+        #will add logic for sidepot later
 
     def getWinner(self, board):
         for name in self.players:
@@ -57,6 +60,7 @@ class PokerGame:
         self.currentBet = 0
         self.pot = 0 
 
+# from notes
 class PlayingCard:
     numberNames = [None, "Ace", "2", "3", "4", "5", "6", "7",
                    "8", "9", "10", "Jack", "Queen", "King"]
@@ -80,14 +84,19 @@ class PlayingCard:
         suit = PlayingCard.suitNames[self.suit]
         return f'<{number} of {suit}>'
 
-class Deck:
 
+class Deck:
+    numberScoreMap = {"2" : 2, "3" : 3, "4" : 4, "5" : 5, "6" : 6, "7" : 7,
+                   "8" : 8, "9" : 9, "10" : 10, "Jack" : 11, "Queen" : 12, 
+                   "King" : 13, "Ace" : 14}
+    suitMap = {"Clubs" : "c", "Diamonds" : "d", "Hearts" : "h", "Spades" : "s"}
     def __init__(self):
         self.deck = self.getDeck()
     
     def __repr__(self):
         return f"Hi This is the deck {self.deck}"
     
+    # from notes
     def getDeck(shuffled=True):
         deck = [ ]
         for number in range(1, 14):
@@ -97,6 +106,11 @@ class Deck:
             random.shuffle(deck)
         return deck
 
+    def getHighCardScore(self, numbers):
+        score = (numbers[0] + numbers[1] * .1 + numbers[2] * .01 + 
+                 numbers[3] * .001 + numbers[4] * .0001)
+        return score
+
 class Player:
     def __init__(self, hand, position, name):
         self.hand = hand
@@ -104,6 +118,7 @@ class Player:
         self.name = name
         self.folded = False
         self.balance = 2000
+        self.handScore = 0
 
     def __repr__(self):
         return (f"I am {self.name} sitting at {self.position}, with hand" + 
@@ -127,6 +142,8 @@ class Player:
     def fold(self):
         self.folded = True
         return 0
+
+    
     
     def check(self):
         return 0
@@ -152,7 +169,7 @@ class Bot(Player):
                 pass
 
     def bet(self):
-        return random.randint(1,5)
+        return random.randint(10,50)
 
     def playHand(self, board, bet=0):
         time.sleep(1)
@@ -176,6 +193,7 @@ def splash_redrawAll(app, canvas):
 
 def splash_keyPressed(app, event):
     app.mode = "game"
+
 ##########
 # Game
 #########
@@ -282,7 +300,7 @@ def game_playRiver(app):
 
 def game_timerFired(app):
     if app.game.gameOver: app.stage = "gameOver"
-    print("hi mom!")
+
     if app.turn > 0 and app.stage == 0:
         app.game.newRound()
         app.board = [ ]
