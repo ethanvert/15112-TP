@@ -45,9 +45,14 @@ class PokerGame:
         #will add logic for sidepot later
 
     def getWinner(self, board):
+        scores = dict()
+        highScore = 0
         for name in self.players:
-            break
-        pass
+            score = self.players[name].handScore
+            scores[score] = scores.get(score, "") + name
+        highScore = max(scores)
+
+        return scores[highScore]
 
     def nextStage(self):
         self.currentBet = 0
@@ -55,6 +60,7 @@ class PokerGame:
     def newRound(self):
         for player in self.players:
             self.players[player].folded = False
+            self.players[player].handScore = 0
         self.deck = Deck()
         self.gameOver = False
         self.currentBet = 0
@@ -226,10 +232,82 @@ class Player:
         self.folded = True
         return 0
 
-    
-    
     def check(self):
         return 0
+
+    def getHandNumbers(self, board):
+        nums = [ Deck.numberScoreMap[c.number] for c in self.hand ]
+        for card in board:
+            num = Deck.numberScoreMap[card.number]
+            nums.append(num)
+        
+        return nums
+
+    def getHandSuits(self, board):
+        suits = [ Deck.numberScoreMap[c.suit] for c in self.hand ]
+        for card in board:
+            suit = Deck.numberScoreMap[card.suit]
+            suits.append(suit)
+        
+        return suits
+
+    def getNumCounts(L):
+        counts = dict()
+
+        for num in L:
+            counts[L.count(num)] = counts.get(L.count(num), set())
+            counts[L.count(num)].add(num)
+
+        return counts
+
+    def getSuitCounts(L):
+        counts = dict()
+
+        for suit in L:
+            counts[L.count(suit)] = counts.get(L.count(suit), set())
+            counts[L.count(suit)].add(suit)     
+
+        return counts      
+
+    def calculateHandScore(self, board):
+        numbers = self.getHandNumbers(self.hand, board)
+        suits = self.getHandSuits(self.hand, board)
+        numCounts = self.getNumCounts(numbers)
+        suitCounts = self.getSuitCounts(suits)
+        hand = ""
+
+        if 5 in suitCounts:
+            if len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
+                hand = "Straight Flush"
+                score = Deck.getStraightFlushScore(numbers)
+            else:
+                hand = "Flush"
+                score = Deck.getFlushScore(numbers)
+        else:
+            if 4 in numCounts:
+                hand = "Four of a Kind"
+                score = Deck.getQuadsScore(numbers)
+            elif 3 in numCounts and 2 in numCounts:
+                hand = "Full House"
+                score = Deck.getFullHouseScore(numbers)
+            elif len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
+                hand = "Straight"
+                score = Deck.getStraightScore(numbers)
+            elif 3 in numCounts:
+                hand = "Three of a Kind"
+                score = Deck.getThreeOfAKindScore(numbers)
+            elif 2 in numCounts and len(numCounts[2]) > 1:
+                hand = "Two Pair"
+                score = Deck.getTwoPairScore(numbers)
+            elif 2 in numCounts:
+                hand = "Pair"
+                score = Deck.getPairScore(numbers)
+            else:
+                hand = "High Card"
+                score = Deck.getHighCardScore(numbers)
+
+        self.handScore = score
+        return (score, hand)
 
 class Bot(Player):
     names = ["Bill", "Nancy", "John", "Steven"]
