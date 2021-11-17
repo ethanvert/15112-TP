@@ -280,6 +280,24 @@ class Player:
             if len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
                 hand = "Straight Flush"
                 score = Deck.getStraightFlushScore(numbers)
+            elif 4 in numCounts:
+                hand = "Four of a Kind"
+                score = Deck.getQuadsScore(numbers)
+            elif 3 in numCounts and 2 in numCounts:
+                hand = "Full House"
+                score = Deck.getFullHouseScore(numbers)
+            elif len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
+                hand = "Straight"
+                score = Deck.getStraightScore(numbers)
+            elif 3 in numCounts:
+                hand = "Three of a Kind"
+                score = Deck.getThreeOfAKindScore(numbers)
+            elif 2 in numCounts and len(numCounts[2]) > 1:
+                hand = "Two Pair"
+                score = Deck.getTwoPairScore(numbers)
+            elif 2 in numCounts:
+                hand = "Pair"
+                score = Deck.getPairScore(numbers)
             else:
                 hand = "Flush"
                 score = Deck.getFlushScore(numbers)
