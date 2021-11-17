@@ -1,6 +1,7 @@
 from cmu_112_graphics import *
 import random
 import math
+import time 
 
 class PokerGame:
     def __init__(self, numPlayers):
@@ -10,7 +11,6 @@ class PokerGame:
         self.pot = 0
         self.deck = Deck()
         self.gameOver = False
-        self.hasBet = False
         self.currentBet = 0
 
     def dealHand(self):
@@ -19,7 +19,8 @@ class PokerGame:
 
     def dealFlop(self):
         self.deck.deck.pop()
-        return [self.deck.deck.pop(), self.deck.deck.pop(), self.deck.deck.pop()]
+        return [self.deck.deck.pop(), self.deck.deck.pop(), 
+                    self.deck.deck.pop()]
 
     def dealTurnOrRiver(self):
         self.deck.deck.pop()
@@ -34,20 +35,27 @@ class PokerGame:
     def bet(self, amount):
         if amount < self.bigBlind or amount < 2 * self.currentBet:
             return 1
-        self.hasBet = True
         self.currentBet = amount
         self.pot += amount
 
+    def call(self, amount):
+        self.pot += amount
+
+    def getWinner(self, board):
+        for name in self.players:
+            break
+        pass
+
     def nextStage(self):
         self.currentBet = 0
-        self.hasBet = False
 
     def newRound(self):
+        for player in self.players:
+            self.players[player].folded = False
         self.deck = Deck()
         self.gameOver = False
         self.currentBet = 0
-        self.pot = 0
-                
+        self.pot = 0 
 
 class PlayingCard:
     numberNames = [None, "Ace", "2", "3", "4", "5", "6", "7",
@@ -73,6 +81,7 @@ class PlayingCard:
         return f'<{number} of {suit}>'
 
 class Deck:
+
     def __init__(self):
         self.deck = self.getDeck()
     
@@ -113,12 +122,14 @@ class Player:
 
     def bet(self, bet):
         self.balance -= bet
+        return bet
 
     def fold(self):
         self.folded = True
+        return 0
     
     def check(self):
-        pass
+        return 0
 
 class Bot(Player):
     names = ["Bill", "Nancy", "John", "Steven"]
@@ -143,10 +154,11 @@ class Bot(Player):
     def bet(self):
         return random.randint(1,5)
 
-    def playHand(self, board):
+    def playHand(self, board, bet=0):
+        time.sleep(1)
         move = random.randint(1,4)
         if move == 1:
-            return self.call()
+            return self.call(bet)
         elif move == 2:
             return self.check()
         elif move == 3:
@@ -187,24 +199,37 @@ def game_keyPressed(app, event):
         game_newPlayer(app)
 
 def game_playerMove(app, name):
-    if app.game.bet:
+    if app.game.currentBet > 0:
         move = app.getUserInput("Call, bet, or fold?")
+        if move == "Call" or "call":
+            app.game.players[name].call(app.game.currentBet)
+        elif move == "Bet" or move == "bet":
+            bet = int(app.getUserInput("How much would you like to bet?"))
+            app.game.bet(bet)
+            app.game.players[name].bet(bet)
+        elif move == "Fold" or move == "fold":
+            app.game.players[name].fold()
     else:
         move = app.getUserInput("Check, bet, or fold?")
-        if move == "Check" or "check":
+        print(move)
+        if move == "Check" or move == "check":
             app.game.players[name].check()
-        elif move == "Bet" or "bet":
-            bet = app.getUserInput("How much would you like to bet?")
+        elif move == "Bet" or move == "bet":
+            bet = int(app.getUserInput("How much would you like to bet?"))
+            app.game.bet(bet)
             app.game.players[name].bet(bet)
-        elif move == "Fold" or "fold":
+        elif move == "Fold" or move == "fold":
             app.game.players[name].fold()
 
 def game_botMove(app, name):
+    if app.game.currentBet> 0:
+        app.game.players[name].call(app.game.currentBet)
     move = app.game.players[name].playHand(app.board)
     if move > 0:
         if app.game.bet(move) != None:
             game_botMove(app, name)
-    
+        else:
+            app.game.bet(move)
 
 def game_playRound(app):
     for name in app.game.players:
@@ -217,29 +242,63 @@ def game_playRound(app):
             not app.game.players[name].folded):
             game_botMove(app, name)
 
-def game_timerFired(app):
-    if app.game.gameOver: return
+def game_playPreFlop(app):
+    app.game.nextStage()
+    game_playRound(app)
+    print(f"The pot has {app.game.pot} chips")
+    app.turn += 1
+    app.stage = app.turn % 4
 
-    print(app.stage)
+def game_playFlop(app):
+    app.game.nextStage()
+    app.board += app.game.dealFlop()
+    print("--------------------")
+    print(app.board)
+    print(f"The pot has {app.game.pot} chips")  
+    game_playRound(app)          
+    app.turn += 1
+    app.stage = app.turn % 4
+
+def game_playTurn(app):
+    app.game.nextStage()
+    app.board.append(app.game.dealTurnOrRiver())
+    print("--------------------")
+    print(app.board)
+    print(f"The pot has {app.game.pot} chips")
+    game_playRound(app)
+    app.turn += 1
+    app.stage = app.turn % 4
+
+def game_playRiver(app):
+    app.game.nextStage()
+    app.board.append(app.game.dealTurnOrRiver())
+    print("--------------------")
+    print(app.board)
+    print(f"The pot has {app.game.pot} chips")
+    game_playRound(app)
+    app.game.getWinner(app.board)
+    app.turn += 1
+    app.stage = app.turn % 4
+
+def game_timerFired(app):
+    if app.game.gameOver: app.stage = "gameOver"
     if app.turn > 0 and app.stage == 0:
         app.game.newRound()
         app.board = [ ]
-        
-    if app.proceed:
+    
+    for player in app.game.players:
+        if app.game.players[player].balance == 0:
+            app.game.eliminatePlayer(player)
+
+    if len(app.game.players) > 1:    
         if app.stage == 0:
-            if app.play:
-                game_playRound(app)
-                app.proceed = False
+            game_playPreFlop(app)
         elif app.stage == 1:
-            app.board += app.game.dealFlop()
-        elif app.stage == 2 or 3:
-            app.board.append(app.game.dealTurnOrRiver())
-            print("--------------------")
-            print(app.board)
-            app.turn += 1
-            app.proceed = False
-            app.play = True
-            app.stage = app.turn % 3
+            game_playFlop(app)
+        elif app.stage == 2:
+            game_playTurn(app)
+        elif app.stage == 3:
+            game_playRiver(app)
         
 def game_drawFelt(app, canvas):
     canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
@@ -249,9 +308,10 @@ def game_drawCard(app, canvas, x, y):
     image= ImageTk.PhotoImage(app.scaleImage(app.cardImage, 1/10)))
 
 def game_drawNames(app, canvas):
+    index = 0
     for name in app.game.players:
-        index = 0
-        canvas.create_text(app.width/2, app.height/2+100*index, font = "arial 26",
+        canvas.create_text(app.width/2, app.height/2+100*index, 
+                            font = "arial 26",
                             text = str(app.game.players[name]))
         index += 1
 
@@ -268,12 +328,21 @@ def game_redrawAll(app, canvas):
 ###########
 
 def pause_redrawAll(app, canvas):
-    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", text= "Paused, press enter or esc to resume")
+    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
+                        text= "Paused, press enter or esc to resume")
 
 def pause_keyPressed(app, event):
     if event.key == "Enter" or event.key == "Escape":
         app.mode = "game"
+    if event.key == "h":
+        app.mode = "help"
 
+###############
+# help
+##############
+def help_redrawAll(app, canvas):
+    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
+                        text= "What do you need help with?")
 ##############
 # Main Stuff
 ##############
