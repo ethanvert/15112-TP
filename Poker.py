@@ -282,6 +282,7 @@ def game_playRiver(app):
 
 def game_timerFired(app):
     if app.game.gameOver: app.stage = "gameOver"
+    print("hi mom!")
     if app.turn > 0 and app.stage == 0:
         app.game.newRound()
         app.board = [ ]
