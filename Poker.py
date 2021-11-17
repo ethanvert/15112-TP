@@ -111,6 +111,89 @@ class Deck:
                  numbers[3] * .001 + numbers[4] * .0001)
         return score
 
+    def getPairScore(self, numbers):
+        pair = 0
+        score = 15
+        exp = 0
+
+        for n in numbers:
+            if numbers.count(n) == 2:
+                pair = n
+            else:
+                exp += 1
+                score += n / (10**exp)
+        return score + pair
+
+    def getTwoPairScore(self, numbers):
+        pairs = set()
+        score = 30
+        exp = 0
+
+        for n in numbers:
+            if numbers.count(n) == 2:
+                pairs.add(n)
+            else:
+                exp += 1 
+                score += n / (10**exp)
+        
+        for elem in pairs:
+            score += elem
+        
+        return score
+        
+    def getThreeOfAKindScore(self, numbers):
+        three = 0
+        score = 45
+        exp = 0
+
+        for n in numbers:
+            if numbers.count(n) == 3:
+                three = n
+            else:
+                exp += 1
+                score += n / (10**exp)
+        return score + three
+
+    def getStraightScore(self, numbers):
+        score = 60
+        return score + max(numbers)
+
+    def getFlushScore(self, numbers):
+        score = 75
+        return self.getHighCardScore(self, numbers)
+
+    def getFullHouseScore(self, numbers):
+        score = 90
+        triple = 0
+        pair = 0
+
+        for n in numbers:
+            if numbers.count(n) == 3:
+                triple = n
+            else:
+                pair = n
+
+        score += triple + pair / 10
+
+        return score
+
+    def getQuadsScore(self, numbers):
+        score = 105
+        quad = 0
+        
+        for n in numbers:
+            if numbers.count(n) == 4:
+                quad = n
+            else:
+                score += n / 10
+        return score + quad
+
+    def getStraightFlushScore(self, numbers):
+        score = 120
+        high = max(numbers)
+
+        return score + high   
+
 class Player:
     def __init__(self, hand, position, name):
         self.hand = hand
