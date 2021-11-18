@@ -6,14 +6,15 @@ import math
 import time 
 
 class PokerGame:
-    def __init__(self, numPlayers):
-        self.numPlayers = numPlayers
+    def __init__(self):
+        self.numPlayers = 0
         self.smallBlind, self.bigBlind = 1, 2
         self.players = { }
         self.pot = 0
         self.deck = Deck()
         self.gameOver = False
         self.currentBet = 0
+        self.numPlaying = 0
 
     def dealHand(self):
         hand = (self.deck.deck.pop(), self.deck.deck.pop())
@@ -48,27 +49,46 @@ class PokerGame:
         scores = dict()
         highScore = 0
         for name in self.players:
-            score = self.players[name].handScore
+            hand = self.players[name].hand
+            score = self.deck.calculateHandScore(hand, board)[0]
+            self.players[name].handScore = score
             scores[score] = scores.get(score, "") + name
         highScore = max(scores)
 
         return scores[highScore]
 
+    # returns the number of players playing during current hand
+    def getNumberPlaying(self):
+        numPlaying = 0
+        players = set()
+        for player in self.players:
+            if self.players[player].playing:
+                numPlaying += 1
+                players.add(player)
+        
+
+
+        return numPlaying, players
+
+    # when betting is over, sets current bet to 0
     def nextStage(self):
         self.currentBet = 0
 
+    # when hand is over, resets these variables for next hand
     def newRound(self):
-        for player in self.players:
-            self.players[player].folded = False
-            self.players[player].handScore = 0
         self.deck = Deck()
+        for player in self.players:
+            self.players[player].playing = True
+            self.players[player].handScore = 0
+            self.players[player].hand = (self.deck.deck.pop(), 
+                                         self.deck.deck.pop())
         self.gameOver = False
         self.currentBet = 0
         self.pot = 0 
 
 # from notes
 class PlayingCard:
-    numberNames = [None, "Ace", "2", "3", "4", "5", "6", "7",
+    numberNames = ["Ace", "2", "3", "4", "5", "6", "7",
                    "8", "9", "10", "Jack", "Queen", "King"]
     suitNames = ["Clubs", "Diamonds", "Hearts", "Spades"]
     cardImageMap = {}
@@ -86,9 +106,7 @@ class PlayingCard:
         self.suit = suit
 
     def __repr__(self):
-        number = PlayingCard.numberNames[self.number]
-        suit = PlayingCard.suitNames[self.suit]
-        return f'<{number} of {suit}>'
+        return f'<{self.number} of {self.suit}>'
 
 
 class Deck:
@@ -105,9 +123,11 @@ class Deck:
     # from notes
     def getDeck(shuffled=True):
         deck = [ ]
-        for number in range(1, 14):
-            for suit in range(4):
-                deck.append(PlayingCard(number, suit))
+        for number in range(0,13):
+            for suit in range(0,4):
+                numName = PlayingCard.numberNames[number]
+                suitName = PlayingCard.suitNames[suit]
+                deck.append(PlayingCard(numName, suitName))
         if (shuffled):
             random.shuffle(deck)
         return deck
@@ -200,53 +220,21 @@ class Deck:
 
         return score + high   
 
-class Player:
-    def __init__(self, hand, position, name):
-        self.hand = hand
-        self.position = position
-        self.name = name
-        self.folded = False
-        self.balance = 2000
-        self.handScore = 0
+    def getHandNumbers(self, hand, board):
+        for c in hand:
+            print(c.number)
 
-    def __repr__(self):
-        return (f"I am {self.name} sitting at {self.position}, with hand" + 
-                f"{str(self.hand)} and {self.balance} chips")
-
-    # calling a bet
-    def call(self, bet):
-        # checks to see if player has enough to call
-        if (self.balance - bet) >= 0:
-            self.balance -= bet # decreases balance by bet
-            return bet # returns value of call
-        else: # bet is too big
-            ret = self.balance # player goes all in
-            self.balance = 0 
-            return ret
-
-    def bet(self, bet):
-        self.balance -= bet
-        return bet
-
-    def fold(self):
-        self.folded = True
-        return 0
-
-    def check(self):
-        return 0
-
-    def getHandNumbers(self, board):
-        nums = [ Deck.numberScoreMap[c.number] for c in self.hand ]
+        nums = [ self.numberScoreMap[c.number] for c in hand ]
         for card in board:
-            num = Deck.numberScoreMap[card.number]
+            num = self.numberScoreMap[card.number]
             nums.append(num)
         
         return nums
 
-    def getHandSuits(self, board):
-        suits = [ Deck.numberScoreMap[c.suit] for c in self.hand ]
+    def getHandSuits(self, hand, board):
+        suits = [ self.suitMap[c.suit] for c in hand ]
         for card in board:
-            suit = Deck.numberScoreMap[card.suit]
+            suit = self.suitMap[card.suit]
             suits.append(suit)
         
         return suits
@@ -269,9 +257,9 @@ class Player:
 
         return counts      
 
-    def calculateHandScore(self, board):
-        numbers = self.getHandNumbers(self.hand, board)
-        suits = self.getHandSuits(self.hand, board)
+    def calculateHandScore(self, playerHand, board):
+        numbers = self.getHandNumbers(playerHand, board)
+        suits = self.getHandSuits(playerHand, board)
         numCounts = self.getNumCounts(numbers)
         suitCounts = self.getSuitCounts(suits)
         hand = ""
@@ -279,53 +267,93 @@ class Player:
         if 5 in suitCounts:
             if len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
                 hand = "Straight Flush"
-                score = Deck.getStraightFlushScore(numbers)
+                score = self.getStraightFlushScore(numbers)
             elif 4 in numCounts:
                 hand = "Flush"
-                score = Deck.getQuadsScore(numbers)
+                score = self.getQuadsScore(numbers)
             elif 3 in numCounts and 2 in numCounts:
                 hand = "Flush"
-                score = Deck.getFullHouseScore(numbers)
+                score = self.getFullHouseScore(numbers)
             elif len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
                 hand = "Flush"
-                score = Deck.getStraightScore(numbers)
+                score = self.getStraightScore(numbers)
             elif 3 in numCounts:
                 hand = "Flush"
-                score = Deck.getThreeOfAKindScore(numbers)
+                score = self.getThreeOfAKindScore(numbers)
             elif 2 in numCounts and len(numCounts[2]) > 1:
                 hand = "Flush"
-                score = Deck.getTwoPairScore(numbers)
+                score = self.getTwoPairScore(numbers)
             elif 2 in numCounts:
                 hand = "Flush"
-                score = Deck.getPairScore(numbers)
+                score = self.getPairScore(numbers)
             else:
                 hand = "Flush"
-                score = Deck.getFlushScore(numbers)
+                score = self.getFlushScore(numbers)
         else:
             if 4 in numCounts:
                 hand = "Four of a Kind"
-                score = Deck.getQuadsScore(numbers)
+                score = self.getQuadsScore(numbers)
             elif 3 in numCounts and 2 in numCounts:
                 hand = "Full House"
-                score = Deck.getFullHouseScore(numbers)
+                score = self.getFullHouseScore(numbers)
             elif len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
                 hand = "Straight"
-                score = Deck.getStraightScore(numbers)
+                score = self.getStraightScore(numbers)
             elif 3 in numCounts:
                 hand = "Three of a Kind"
-                score = Deck.getThreeOfAKindScore(numbers)
+                score = self.getThreeOfAKindScore(numbers)
             elif 2 in numCounts and len(numCounts[2]) > 1:
                 hand = "Two Pair"
-                score = Deck.getTwoPairScore(numbers)
+                score = self.getTwoPairScore(numbers)
             elif 2 in numCounts:
                 hand = "Pair"
-                score = Deck.getPairScore(numbers)
+                score = self.getPairScore(numbers)
             else:
                 hand = "High Card"
-                score = Deck.getHighCardScore(numbers)
+                score = self.getHighCardScore(numbers)
 
-        self.handScore = score
         return (score, hand)
+
+class Player:
+    def __init__(self, hand, position, name):
+        self.hand = hand
+        self.position = position
+        self.name = name
+        self.playing = True
+        self.balance = 2000
+        self.handScore = 0
+
+    def __repr__(self):
+        return (f"I am {self.name} sitting at {self.position}, with hand" + 
+                f"{str(self.hand)} and {self.balance} chips")
+
+    # calling a bet
+    def call(self, bet):
+        print(f"{self.name} called")
+        # checks to see if player has enough to call
+        if (self.balance - bet) >= 0:
+            self.balance -= bet # decreases balance by bet
+            return bet # returns value of call
+        else: # bet is too big
+            ret = self.balance # player goes all in
+            self.balance = 0 
+            return ret
+
+    def bet(self, bet):
+        if bet <= self.balance:
+            self.balance -= bet
+        else:
+            return self.balance
+        return bet
+
+    def fold(self):
+        print(f"{self.name} folded")
+        self.playing = False
+        return 0
+
+    def check(self):
+        print(f"{self.name} checked")
+        return 0
 
 class Bot(Player):
     names = ["Bill", "Nancy", "John", "Steven"]
@@ -348,6 +376,7 @@ class Bot(Player):
                 pass
 
     def bet(self):
+        print(f"{self.name} betted")
         return random.randint(10,50)
 
     def playHand(self, board, bet=0):
@@ -357,10 +386,10 @@ class Bot(Player):
             return self.call(bet)
         elif move == 2:
             return self.check()
-        elif move == 3:
-            return self.fold()
+        # elif move == 3:
+        #     return self.fold()
         else:
-            return self.bet()
+            return self.check()
 
 ###########
 # Start Screen
@@ -393,6 +422,7 @@ def game_keyPressed(app, event):
     if event.key == "Escape":
         app.mode = "pause"
     if event.key == "Up":
+        app.game.numPlayers += 1
         game_newPlayer(app)
 
 def game_playerMove(app, name):
@@ -400,6 +430,7 @@ def game_playerMove(app, name):
         move = app.getUserInput("Call, bet, or fold?")
         if move == "Call" or "call":
             app.game.players[name].call(app.game.currentBet)
+            app.game.call(app.game.currentBet)
         elif move == "Bet" or move == "bet":
             bet = int(app.getUserInput("How much would you like to bet?"))
             app.game.bet(bet)
@@ -419,29 +450,32 @@ def game_playerMove(app, name):
             app.game.players[name].fold()
 
 def game_botMove(app, name):
+    print(f"current bet {app.game.currentBet}")
     if app.game.currentBet> 0:
-        app.game.players[name].call(app.game.currentBet)
-    move = app.game.players[name].playHand(app.board)
-    if move > 0:
-        if app.game.bet(move) != None:
-            game_botMove(app, name)
-        else:
-            app.game.bet(move)
+        app.game.pot += app.game.players[name].call(app.game.currentBet)
+    else:
+        move = app.game.players[name].playHand(app.board)
+        if move > 0:
+            if app.game.bet(move) != None:
+                game_botMove(app, name)
+            else:
+                app.game.bet(move)
 
-def game_playRound(app):
+def game_playStage(app):
     for name in app.game.players:
-        print(name +" is a " + str(type(app.game.players[name])))
+        print(f"num playing {app.game.getNumberPlaying()[0]}")
+        if app.game.getNumberPlaying()[0] == 1:
+            break
         if (type(app.game.players[name]) == Player and 
-            not app.game.players[name].folded):
-            print("hand: ", app.game.players[name].hand)
+            app.game.players[name].playing):
             game_playerMove(app, name)
         elif (type(app.game.players[name]) == Bot and 
-            not app.game.players[name].folded):
+            app.game.players[name].playing):
             game_botMove(app, name)
 
 def game_playPreFlop(app):
     app.game.nextStage()
-    game_playRound(app)
+    game_playStage(app)
     print(f"The pot has {app.game.pot} chips")
     app.turn += 1
     app.stage = app.turn % 4
@@ -451,9 +485,9 @@ def game_playFlop(app):
     app.board += app.game.dealFlop()
     # game_drawBoard(app)
     print("--------------------")
-    print(app.board)
-    print(f"The pot has {app.game.pot} chips")  
-    game_playRound(app)          
+    print(app.board) 
+    game_playStage(app)
+    print(f"The pot has {app.game.pot} chips")          
     app.turn += 1
     app.stage = app.turn % 4
 
@@ -463,8 +497,7 @@ def game_playTurn(app):
     # game_drawBoard(app)
     print("--------------------")
     print(app.board)
-    print(f"The pot has {app.game.pot} chips")
-    game_playRound(app)
+    game_playStage(app)
     app.turn += 1
     app.stage = app.turn % 4
 
@@ -474,22 +507,29 @@ def game_playRiver(app):
     #app_drawBoard
     print("--------------------")
     print(app.board)
+    game_playStage(app)
     print(f"The pot has {app.game.pot} chips")
-    game_playRound(app)
-    app.game.getWinner(app.board)
+    winner = app.game.getWinner(app.board)
+    app.game.players[winner].balance += app.game.pot
     app.turn += 1
     app.stage = app.turn % 4
 
 def game_timerFired(app):
+    print(f"turn: {app.turn}")
+    print(f"stage: {app.stage}")
+    print(f"numPlaying: {app.game.getNumberPlaying()[0]}")
     if app.game.gameOver: app.stage = "gameOver"
+
+    if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
+        print(f"players: {app.game.getNumberPlaying()[1]}")
+        player = app.game.getNumberPlaying()[1].pop()
+        app.game.players[player].balance += app.game.pot
+        app.turn += (3-app.stage)
+        app.stage = 0
 
     if app.turn > 0 and app.stage == 0:
         app.game.newRound()
         app.board = [ ]
-    
-    for player in app.game.players:
-        if app.game.players[player].balance == 0:
-            app.game.eliminatePlayer(player)
 
     if len(app.game.players) > 1:    
         if app.stage == 0:
@@ -514,19 +554,18 @@ def game_drawBoard(app, canvas):
     else:
         pass
 
-def game_drawNames(app, canvas):
-    index = 0
+def game_drawUser(app, canvas):
     for name in app.game.players:
-        canvas.create_text(app.width/2, app.height/2+100*index, 
-                            font = "arial 26",
-                            text = str(app.game.players[name]))
-        index += 1
+        if type(app.game.players[name]) == Player:
+            canvas.create_text(app.width/2, app.height-100, 
+                                font = "arial 12",
+                                text = str(app.game.players[name]))
 
 def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)
     game_drawCard(app, canvas, app.width/10, app.height/2)
-    game_drawNames(app, canvas)
-    game_drawBoard()
+    game_drawUser(app, canvas)
+    game_drawBoard(app, canvas)
 
     for i in range(len(app.game.players)):
         game_drawCard(app, canvas, app.width/2, 0+i*app.height)
@@ -559,16 +598,16 @@ def appStarted(app):
             +"images/products/original/8006b.jpg")
     app.cardImage = app.loadImage(url)
     app.mode = "splash"
-    app.numPlayers = 2
     app.board = [ ]
     app.proceed = False
     app.play = False
     app.turn = 0
     app.stage = app.turn % 3
-    app.game = PokerGame(app.numPlayers)
+    app.game = PokerGame()
 
 def playPoker():
     runApp(width=512, height=512)
+
 
 def main():
     playPoker()
