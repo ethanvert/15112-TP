@@ -5,7 +5,6 @@ class PlayingCard:
     numberNames = ["Ace", "2", "3", "4", "5", "6", "7",
                    "8", "9", "10", "Jack", "Queen", "King"]
     suitNames = ["Clubs", "Diamonds", "Hearts", "Spades"]
-    cardImageMap = {}
     CLUBS = 0
     DIAMONDS = 1
     HEARTS = 2

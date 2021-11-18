@@ -53,14 +53,16 @@ class Bot(Player):
     def __repr__(self):
         return (f"I am level {self.difficulty}, sitting at {self.position}" + 
                 f" and my hand is {str(self.hand)} with {self.balance} chips")
-   
-    def __Rank(self, board):
-        pass
+    
+    # next 2 methods for tp2
 
-    def calculateHandStrength(self, board):
-        if board == None:
-            if self.__Rank()>10:
-                pass
+    # def __Rank(self, board):
+    #     pass
+
+    # def calculateHandStrength(self, board):
+    #     if board == None:
+    #         if self.__Rank()>10:
+    #             pass
 
     def bet(self):
         print(f"{self.name} betted")
