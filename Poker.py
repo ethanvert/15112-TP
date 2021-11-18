@@ -47,27 +47,27 @@ class PokerGame:
 
     def getWinner(self, board):
         scores = dict()
-        highScore = 0
-        for name in self.players:
-            hand = self.players[name].hand
-            score = self.deck.calculateHandScore(hand, board)[0]
-            self.players[name].handScore = score
-            scores[score] = scores.get(score, "") + name
-        highScore = max(scores)
+        highScore = (0,'')
+        playing = self.getNumberPlaying()[1]
 
-        return scores[highScore]
+        for name in playing:
+            hand = self.players[name].hand
+            score = self.deck.calculateHandScore(hand, board)
+            if score[0] > highScore[0]:
+                highScore = score
+            self.players[name].handScore = score[0]
+            scores[score[0]] = scores.get(score[0], "") + name
+
+        return scores[highScore[0]], highScore[1]
 
     # returns the number of players playing during current hand
     def getNumberPlaying(self):
         numPlaying = 0
-        players = set()
+        players = [ ]
         for player in self.players:
             if self.players[player].playing:
                 numPlaying += 1
-                players.add(player)
-        
-
-
+                players.append(player)
         return numPlaying, players
 
     # when betting is over, sets current bet to 0
@@ -239,7 +239,7 @@ class Deck:
         
         return suits
 
-    def getNumCounts(L):
+    def getNumCounts(self, L):
         counts = dict()
 
         for num in L:
@@ -248,7 +248,7 @@ class Deck:
 
         return counts
 
-    def getSuitCounts(L):
+    def getSuitCounts(self, L):
         counts = dict()
 
         for suit in L:
@@ -260,6 +260,8 @@ class Deck:
     def calculateHandScore(self, playerHand, board):
         numbers = self.getHandNumbers(playerHand, board)
         suits = self.getHandSuits(playerHand, board)
+
+        print(numbers)
         numCounts = self.getNumCounts(numbers)
         suitCounts = self.getSuitCounts(suits)
         hand = ""
@@ -386,8 +388,8 @@ class Bot(Player):
             return self.call(bet)
         elif move == 2:
             return self.check()
-        # elif move == 3:
-        #     return self.fold()
+        elif move == 3:
+            return self.fold()
         else:
             return self.check()
 
@@ -474,6 +476,8 @@ def game_playStage(app):
             game_botMove(app, name)
 
 def game_playPreFlop(app):
+    print("--------------------")
+    print("playing preflop")
     app.game.nextStage()
     game_playStage(app)
     print(f"The pot has {app.game.pot} chips")
@@ -481,10 +485,11 @@ def game_playPreFlop(app):
     app.stage = app.turn % 4
 
 def game_playFlop(app):
+    print("--------------------")    
+    print("playing flop")
     app.game.nextStage()
     app.board += app.game.dealFlop()
     # game_drawBoard(app)
-    print("--------------------")
     print(app.board) 
     game_playStage(app)
     print(f"The pot has {app.game.pot} chips")          
@@ -492,25 +497,26 @@ def game_playFlop(app):
     app.stage = app.turn % 4
 
 def game_playTurn(app):
+    print("--------------------")
     app.game.nextStage()
     app.board.append(app.game.dealTurnOrRiver())
     # game_drawBoard(app)
-    print("--------------------")
     print(app.board)
     game_playStage(app)
     app.turn += 1
     app.stage = app.turn % 4
 
 def game_playRiver(app):
+    print("--------------------")
     app.game.nextStage()
     app.board.append(app.game.dealTurnOrRiver())
     #app_drawBoard
-    print("--------------------")
     print(app.board)
     game_playStage(app)
     print(f"The pot has {app.game.pot} chips")
     winner = app.game.getWinner(app.board)
-    app.game.players[winner].balance += app.game.pot
+    print(f"{winner[0]} wins this hand! with {winner[1]}")
+    app.game.players[winner[0]].balance += app.game.pot
     app.turn += 1
     app.stage = app.turn % 4
 
@@ -522,16 +528,18 @@ def game_timerFired(app):
 
     if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
         print(f"players: {app.game.getNumberPlaying()[1]}")
-        player = app.game.getNumberPlaying()[1].pop()
+        player = app.game.getNumberPlaying()[1][0]
         app.game.players[player].balance += app.game.pot
-        app.turn += (3-app.stage)
+        app.turn += (4-app.stage)
         app.stage = 0
+        print(f"turn after fold: {app.turn}")
 
     if app.turn > 0 and app.stage == 0:
         app.game.newRound()
         app.board = [ ]
 
-    if len(app.game.players) > 1:    
+    # if len(app.game.players) > 1:    
+    if app.play:
         if app.stage == 0:
             game_playPreFlop(app)
         elif app.stage == 1:
@@ -607,7 +615,6 @@ def appStarted(app):
 
 def playPoker():
     runApp(width=512, height=512)
-
 
 def main():
     playPoker()
