@@ -39,7 +39,7 @@ class PokerGame:
     def bet(self, amount):
         if amount < self.bigBlind or amount < 2 * self.currentBet:
             return 1
-        self.currentBet = amount
+        self.currentBet += amount
         self.pot += amount
 
     def call(self, amount):
@@ -105,7 +105,7 @@ def splash_keyPressed(app, event):
 def game_newPlayer(app):
     hand = app.game.dealHand()
     if len(app.game.players) == 0:
-        name = "Ethan"
+        name = "Player 1"
         print(name)
         app.game.addPlayer(Player(hand, len(app.game.players), name))
     else:
@@ -126,26 +126,33 @@ def game_playerMove(app, name):
         if move == "Call" or "call":
             app.game.players[name].call(app.game.currentBet)
             app.game.call(app.game.currentBet)
+            app.currentMove = f"{name} calls the bet of {app.game.currentBet}"
         elif move == "Bet" or move == "bet":
             bet = int(app.getUserInput("How much would you like to bet?"))
             app.game.bet(bet)
             app.game.players[name].bet(bet)
+            app.currentMove = (f"{name} reraises. " +
+                                f"Call {app.game.currentBet} chips to play.")
         elif move == "Fold" or move == "fold":
             app.game.players[name].fold()
+            app.currentMove = f"{name} folds."
     else:
         move = app.getUserInput("Check, bet, or fold?")
         print(move)
         if move == "Check" or move == "check":
             app.game.players[name].check()
+            app.currentMove = f"{name} checks"
         elif move == "Bet" or move == "bet":
             bet = int(app.getUserInput("How much would you like to bet?"))
             app.game.bet(bet)
             app.game.players[name].bet(bet)
+            app.currentMove = (f"{name} bets {app.game.currentBet} chips. " +
+                                "Call or Fold?")
         elif move == "Fold" or move == "fold":
             app.game.players[name].fold()
+            app.currentMove = f"{name} folds."
 
 def game_botMove(app, name):
-    print(f"current bet {app.game.currentBet}")
     if app.game.currentBet> 0:
         app.game.pot += app.game.players[name].call(app.game.currentBet)
     else:
@@ -158,7 +165,6 @@ def game_botMove(app, name):
 
 def game_playStage(app):
     for name in app.game.players:
-        print(f"num playing {app.game.numPlaying}")
         if app.game.getNumberPlaying()[0] == 1:
             break
         if (type(app.game.players[name]) == Player and 
@@ -169,49 +175,35 @@ def game_playStage(app):
             game_botMove(app, name)
 
 def game_playPreFlop(app):
-    print("--------------------")
-    print("playing preflop")
     app.game.nextStage()
     game_playStage(app)
-    print(f"The pot has {app.game.pot} chips")
     app.turn += 1
     app.stage = app.turn % 4
-
-def game_playFlop(app):
-    print("--------------------")    
-    print("playing flop")
     app.game.nextStage()
     app.board += app.game.dealFlop()
-    # game_drawBoard(app)
-    print(app.board) 
-    game_playStage(app)
-    print(f"The pot has {app.game.pot} chips")          
+
+def game_playFlop(app):
+    game_playStage(app)    
     app.turn += 1
     app.stage = app.turn % 4
+    app.game.nextStage()
+    app.board.append(app.game.dealTurnOrRiver())
 
 def game_playTurn(app):
-    print("--------------------")
-    app.game.nextStage()
-    app.board.append(app.game.dealTurnOrRiver())
-    # game_drawBoard(app)
-    print(app.board)
     game_playStage(app)
     app.turn += 1
     app.stage = app.turn % 4
-
-def game_playRiver(app):
-    print("--------------------")
     app.game.nextStage()
     app.board.append(app.game.dealTurnOrRiver())
-    #app_drawBoard
-    print(app.board)
+
+def game_playRiver(app):
     game_playStage(app)
-    print(f"The pot has {app.game.pot} chips")
     winner = app.game.getWinner(app.board)
-    print(f"{winner[0]} wins this hand! with {winner[1]}")
+    app.curentMove = f"{winner[0]} wins this hand! with {winner[1]}"
     app.game.players[winner[0]].balance += app.game.pot
     app.turn += 1
     app.stage = app.turn % 4
+    app.play = False
 
 def game_timerFired(app):
     if app.game.gameOver: 
@@ -244,12 +236,11 @@ def game_drawFelt(app, canvas):
     canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
 
 def game_drawCard(app, canvas, x, y):
-    image= app.scaleImage(app.cardImage1, 1/10)
+    image= app.scaleImage(app.cardImage1, 1/20)
     photoImage = getCachedPhotoImage(app, image)
     canvas.create_image(x, y, image=photoImage)
 
 def game_drawBoard(app, canvas):
-    game_drawCard(app, canvas, app.width/10, app.height/2)
     if app.board == [ ]:
         pass
     else:
@@ -284,16 +275,37 @@ def game_drawPlayers(app, canvas):
             cardY = centerY + r * math.sin(cardAngle)
             game_drawCard(app, canvas, cardX, cardY)
         else:
-            game_drawCard(app, canvas, app.width/2, app.height)
-            canvas.create_text(app.width/2, app.height-100, 
-                                font = "arial 12",
-                                text = str(app.game.players[name]))
+            game_drawPlayerHand(app, canvas, name)
         index += 1
+
+def game_drawPlayerHand(app, canvas, name):
+    index = 0
+    for card in app.game.players[name].hand:
+        num = app.numberMap[card.number]
+        suit = app.suitMap[card.suit]
+        cardWidth = 73
+        cardHeight = 98
+        cX = cardWidth * num
+        cY = cardHeight * suit
+        image = app.cardImage2.crop((cX, cY, 
+                                     cX + cardWidth, cY + cardHeight))
+        image = app.scaleImage(image, 7/8)
+        photoImage = getCachedPhotoImage(app, image)
+        canvas.create_image(app.width/2 + index * cardWidth/3, app.height-100,
+                            image = photoImage)
+        index += 1
+
+def game_drawConsole(app, canvas):
+    textX = 128
+    textY = 3/4 * app.height
+    canvas.create_text(textX, textY, font = "arial 18", text = app.currentMove)
+    pass
 
 def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)
     game_drawBoard(app, canvas)
     game_drawPlayers(app, canvas)
+    game_drawConsole(app, canvas)
 
 ###########
 # pause
@@ -339,6 +351,7 @@ def appStarted(app):
     app.turn = 0
     app.stage = app.turn % 3
     app.game = PokerGame()
+    app.currentMove = ''
 
 def getCachedPhotoImage(app, image):
     # stores a cached version of the PhotoImage in the PIL/Pillow image

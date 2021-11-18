@@ -184,21 +184,6 @@ class Deck:
             if len(numCounts) == 1 and max(numbers) - min(numbers) == 4:
                 hand = "Straight Flush"
                 score = self.getStraightFlushScore(numbers)
-            elif 4 in numCounts:
-                hand = "Flush"
-                score = self.getQuadsScore(numbers)
-            elif 3 in numCounts and 2 in numCounts:
-                hand = "Flush"
-                score = self.getFullHouseScore(numbers)
-            elif 3 in numCounts:
-                hand = "Flush"
-                score = self.getThreeOfAKindScore(numbers)
-            elif 2 in numCounts and len(numCounts[2]) > 1:
-                hand = "Flush"
-                score = self.getTwoPairScore(numbers)
-            elif 2 in numCounts:
-                hand = "Flush"
-                score = self.getPairScore(numbers)
             else:
                 hand = "Flush"
                 score = self.getFlushScore(numbers)
