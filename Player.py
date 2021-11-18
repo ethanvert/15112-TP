@@ -43,7 +43,7 @@ class Player:
         return 0
 
 class Bot(Player):
-    names = ["Bill", "Nancy", "John", "Steven"]
+    names = ["Bill", "Nancy", "John", "Steven", "Chris", "Jane", "Alex"]
     def __init__(self, hand, position, name):
         super().__init__(hand, position, name)
         self.difficulty = random.randint(0,1)

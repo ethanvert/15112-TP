@@ -21,6 +21,8 @@ class PlayingCard:
     def __repr__(self):
         return f'<{self.number} of {self.suit}>'
 
+# I got heavy inspiration for the hand scoring algo from 
+# https://towardsdatascience.com/poker-with-python-how-to-score-all-hands-in-texas-holdem-6fd750ef73d
 class Deck:
     numberScoreMap = {"2" : 2, "3" : 3, "4" : 4, "5" : 5, "6" : 6, "7" : 7,
                    "8" : 8, "9" : 9, "10" : 10, "Jack" : 11, "Queen" : 12, 

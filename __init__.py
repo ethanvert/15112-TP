@@ -1,5 +1,3 @@
-# Note: I got heavy inspiration for the hand scoring algo from https://towardsdatascience.com/poker-with-python-how-to-score-all-hands-in-texas-holdem-6fd750ef73d
-
 from cmu_112_graphics import *
 from Deck import *
 from Player import *
@@ -34,7 +32,9 @@ class PokerGame:
         del self.players[name]
 
     def addPlayer(self, player):
-        self.players[player.name] = player
+        if player.name not in self.players:
+            self.players[player.name] = player
+        self.numPlayers = len(self.players)
 
     def bet(self, amount):
         if amount < self.bigBlind or amount < 2 * self.currentBet:
@@ -78,6 +78,7 @@ class PokerGame:
     # when hand is over, resets these variables for next hand
     def newRound(self):
         self.deck = Deck()
+        self.numPlayers = len(self.players)
         for player in self.players:
             self.players[player].playing = True
             self.players[player].handScore = 0
@@ -108,8 +109,7 @@ def game_newPlayer(app):
         print(name)
         app.game.addPlayer(Player(hand, len(app.game.players), name))
     else:
-        name = Bot.names[random.randint(0,3)]
-        print(name)
+        name = Bot.names[random.randint(0,6)]
         app.game.addPlayer(Bot(hand, len(app.game.players), name))
     
 def game_keyPressed(app, event):
@@ -118,7 +118,6 @@ def game_keyPressed(app, event):
     if event.key == "Escape":
         app.mode = "pause"
     if event.key == "Up":
-        app.game.numPlayers += 1
         game_newPlayer(app)
 
 def game_playerMove(app, name):
@@ -159,7 +158,7 @@ def game_botMove(app, name):
 
 def game_playStage(app):
     for name in app.game.players:
-        print(f"num playing {app.game.getNumberPlaying()[0]}")
+        print(f"num playing {app.game.numPlaying}")
         if app.game.getNumberPlaying()[0] == 1:
             break
         if (type(app.game.players[name]) == Player and 
@@ -215,9 +214,6 @@ def game_playRiver(app):
     app.stage = app.turn % 4
 
 def game_timerFired(app):
-    print(f"turn: {app.turn}")
-    print(f"stage: {app.stage}")
-    print(f"numPlaying: {app.game.getNumberPlaying()[0]}")
     if app.game.gameOver: 
         app.stage = "gameOver"
         return
@@ -264,7 +260,8 @@ def game_drawBoard(app, canvas):
             cardHeight = 98
             cX = cardWidth * num
             cY = cardHeight * suit
-            cardX = app.width/2 - (2 - i) * 75
+            cardSpace = 2
+            cardX = app.width/2 - (2 - i) * (cardWidth + cardSpace)
             image = app.cardImage2.crop((cX, cY, 
                                         cX + cardWidth, cY + cardHeight))
             photoImage = getCachedPhotoImage(app, image)
@@ -272,22 +269,22 @@ def game_drawBoard(app, canvas):
 
 def game_drawPlayers(app, canvas):
     cardAngle = math.pi/2
-    cardX = app.width/2
-    cardY = app.height
-
+    centerX = app.width/2
+    centerY = app.height/2
     index = 0
+
     for name in app.game.players:
         if type(app.game.players[name]) == Bot:
             cardAngle += math.pi/4 * index
-            numerator = app.width/2 * app.height/4
-            denominator = math.sqrt((app.width/2)**2 * math.sin(cardAngle)**2 + 
+            numerator = app.width/4 * app.height/4
+            denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
                                      (app.height/4)**2 * math.cos(cardAngle)**2)
             r = numerator/denominator
-            cardX = r * math.cos(cardAngle)+200
-            cardY = r * math.sin(cardAngle)
+            cardX = centerX + r * math.cos(cardAngle)
+            cardY = centerY + r * math.sin(cardAngle)
             game_drawCard(app, canvas, cardX, cardY)
         else:
-            game_drawCard(app, canvas, cardX, cardY)
+            game_drawCard(app, canvas, app.width/2, app.height)
             canvas.create_text(app.width/2, app.height-100, 
                                 font = "arial 12",
                                 text = str(app.game.players[name]))
@@ -350,7 +347,7 @@ def getCachedPhotoImage(app, image):
     return image.cachedPhotoImage
 
 def playPoker():
-    runApp(width=512, height=512)
+    runApp(width=1024, height=512)
 
 def main():
     playPoker()
