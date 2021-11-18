@@ -2,6 +2,7 @@
 
 from cmu_112_graphics import *
 from Deck import *
+from Player import *
 import random
 import time 
 
@@ -85,83 +86,6 @@ class PokerGame:
         self.gameOver = False
         self.currentBet = 0
         self.pot = 0 
-
-class Player:
-    def __init__(self, hand, position, name):
-        self.hand = hand
-        self.position = position
-        self.name = name
-        self.playing = True
-        self.balance = 2000
-        self.handScore = 0
-
-    def __repr__(self):
-        return (f"I am {self.name} sitting at {self.position}, with hand" + 
-                f"{str(self.hand)} and {self.balance} chips")
-
-    # calling a bet
-    def call(self, bet):
-        print(f"{self.name} called")
-        # checks to see if player has enough to call
-        if (self.balance - bet) >= 0:
-            self.balance -= bet # decreases balance by bet
-            return bet # returns value of call
-        else: # bet is too big
-            ret = self.balance # player goes all in
-            self.balance = 0 
-            return ret
-
-    def bet(self, bet):
-        if bet <= self.balance:
-            self.balance -= bet
-        else:
-            return self.balance
-        return bet
-
-    def fold(self):
-        print(f"{self.name} folded")
-        self.playing = False
-        return 0
-
-    def check(self):
-        print(f"{self.name} checked")
-        return 0
-
-class Bot(Player):
-    names = ["Bill", "Nancy", "John", "Steven"]
-    def __init__(self, hand, position, name):
-        super().__init__(hand, position, name)
-        self.difficulty = random.randint(0,1)
-        self.minimumPlayable = 2
-        self.name = name
-
-    def __repr__(self):
-        return (f"I am level {self.difficulty}, sitting at {self.position}" + 
-                f" and my hand is {str(self.hand)} with {self.balance} chips")
-   
-    def __Rank(self, board):
-        pass
-
-    def calculateHandStrength(self, board):
-        if board == None:
-            if self.__Rank()>10:
-                pass
-
-    def bet(self):
-        print(f"{self.name} betted")
-        return random.randint(10,50)
-
-    def playHand(self, board, bet=0):
-        time.sleep(1)
-        move = random.randint(1,4)
-        if move == 1:
-            return self.call(bet)
-        elif move == 2:
-            return self.check()
-        elif move == 3:
-            return self.fold()
-        else:
-            return self.check()
 
 ###########
 # Start Screen
@@ -332,26 +256,28 @@ def game_drawBoard(app, canvas):
     else:
         pass
 
-def game_drawPlayer(app, canvas):
+def game_drawPlayers(app, canvas):
     cardAngle = 90
     cardX = app.width/2
     cardY = app.height
+    index = 0
     for name in app.game.players:
-
-        if type(app.game.players[name]) == Player:
+        if type(app.game.players[name]) == Bot:
+            cardAngle = 90 + 45 * index
+            
+            game_drawCard(cardX, cardY)
+        else:
+            cardAngle = 90 + 45 * index
+            game_drawCard(app, canvas, cardX, cardY)
             canvas.create_text(app.width/2, app.height-100, 
                                 font = "arial 12",
                                 text = str(app.game.players[name]))
-
-def game_drawBots(app, canvas):
-    for name in app.game.players:
-        if type(app.game.players[name]) == Bot:
-            canvas.create_text(app)
+        index += 1
 
 def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)
     game_drawCard(app, canvas, app.width/10, app.height/2)
-    game_drawBots(app, canvas)
+    game_drawPlayers(app, canvas)
     game_drawBoard(app, canvas)
 
     for i in range(len(app.game.players)):
