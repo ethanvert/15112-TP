@@ -100,7 +100,7 @@ class Deck:
 
     def getFlushScore(self, numbers):
         score = 75
-        return self.getHighCardScore(self, numbers)
+        return self.getHighCardScore(numbers)
 
     def getFullHouseScore(self, numbers):
         score = 90
@@ -135,9 +135,6 @@ class Deck:
         return score + high   
 
     def getHandNumbers(self, hand, board):
-        for c in hand:
-            print(c.number)
-
         nums = [ self.numberScoreMap[c.number] for c in hand ]
         for card in board:
             num = self.numberScoreMap[card.number]
@@ -174,8 +171,6 @@ class Deck:
     def calculateHandScore(self, playerHand, board):
         numbers = self.getHandNumbers(playerHand, board)
         suits = self.getHandSuits(playerHand, board)
-
-        print(numbers)
         numCounts = self.getNumCounts(numbers)
         suitCounts = self.getSuitCounts(suits)
         hand = ""

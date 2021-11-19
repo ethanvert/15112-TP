@@ -7,6 +7,7 @@ class Player:
         self.position = position
         self.name = name
         self.playing = True
+        self.played = False
         self.balance = 2000
         self.handScore = 0
 
@@ -16,31 +17,28 @@ class Player:
 
     # calling a bet
     def call(self, bet):
-        print(f"{self.name} called")
         # checks to see if player has enough to call
         if (self.balance - bet) >= 0:
             self.balance -= bet # decreases balance by bet
-            return bet # returns value of call
+            return bet, f"{self.name} called" # returns value of call
         else: # bet is too big
             ret = self.balance # player goes all in
             self.balance = 0 
-            return ret
+            return ret, f"{self.name} called"
 
     def bet(self, bet):
         if bet <= self.balance:
             self.balance -= bet
         else:
             return self.balance
-        return bet
+        return bet, f"{self.name} bets {bet} chips"
 
     def fold(self):
-        print(f"{self.name} folded")
         self.playing = False
-        return 0
+        return 0, f"{self.name} folded"
 
     def check(self):
-        print(f"{self.name} checked")
-        return 0
+        return 0, f"{self.name} checked"
 
 class Bot(Player):
     names = ["Bill", "Nancy", "John", "Steven", "Chris", "Jane", "Alex"]
