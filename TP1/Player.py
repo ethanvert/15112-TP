@@ -66,14 +66,14 @@ class Bot(Player):
         print(f"{self.name} betted")
         return random.randint(10,50)
 
-    def playHand(self, board, bet=0):
+    def playHand(self, board, bet = 0):
         time.sleep(1)
         move = random.randint(1,4)
         if move == 1:
-            return self.call(bet)
+            return self.fold()
         elif move == 2:
-            return self.check()
+            return self.fold()
         elif move == 3:
             return self.fold()
         else:
-            return self.check()
+            return self.fold()

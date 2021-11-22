@@ -9,6 +9,7 @@ class PokerGame:
         self.numPlayers = 0
         self.smallBlind, self.bigBlind = 1, 2
         self.players = { }
+        self.names = [ ]
         self.pot = 0
         self.deck = Deck()
         self.gameOver = False
@@ -29,13 +30,19 @@ class PokerGame:
         self.deck.deck.pop()
         return self.deck.deck.pop()
     
+    def removeLosers(self):
+        for name in self.names:
+            if self.players[name].balance <= 0:
+                self.eliminatePlayer(name)
     def eliminatePlayer(self, name):
         del self.players[name]
 
     def addPlayer(self, player):
         if player.name not in self.players:
             self.players[player.name] = player
+            self.names.append(player.name)
         self.numPlayers = len(self.players)
+
 
     def bet(self, amount):
         if amount < self.bigBlind or amount < 2 * self.currentBet:
@@ -168,7 +175,7 @@ def game_playerMove(app, name):
     app.game.players[name].played = True
 
 def game_botMove(app, name):
-    if app.game.currentBet> 0:
+    if app.game.currentBet > 0:
         app.game.pot += app.game.players[name].call(app.game.currentBet)[0]
         app.currentMove = app.game.players[name].call(app.game.currentBet)[1]
     else:
@@ -211,6 +218,7 @@ def game_playPreFlop(app):
             app.game.players[player].hand = hand
         app.game.dealt = True
         return
+
     if not app.proceed:
         game_playStage(app)
     else:
@@ -246,11 +254,9 @@ def game_playRiver(app):
     else:
         winner = app.game.getWinner(app.board)
         print(f"{winner[0]} wins this hand! with {winner[1]}")
-        if len(winner[0]) > 1:
-            for victor in winner[0]:
-                app.game.players[victor].balance += app.game.pot//len(winner(0))
-        else:
-            app.game.players[winner[0][0]].balance += app.game.pot
+        for victor in winner[0]:
+            app.game.players[victor].balance += app.game.pot//len(winner(0))
+        app.game.removeLosers()
         app.turn += 1
         app.stage = app.turn % 4
         app.play = False
@@ -263,11 +269,18 @@ def game_timerFired(app):
         app.stage = "gameOver"
         return
 
+    if len(app.game.players) == 1:
+        app.game.gameOver = True
+        return
+
     if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
         player = app.game.getNumberPlaying()[1][0]
         app.game.players[player].balance += app.game.pot
         app.turn += (4-app.stage)
         app.stage = 0
+        app.play = False
+        app.proceed = False
+        app.game.newRound()
 
     if app.play:
         if app.stage == 0:
@@ -320,10 +333,13 @@ def game_drawPlayers(app, canvas):
             r = numerator/denominator
             cardX = centerX + r * math.cos(cardAngle)
             cardY = centerY + r * math.sin(cardAngle)
-            textY = cardY - 30
+            nameY = cardY + 40
+            chipsY = nameY + 14
             game_drawCard(app, canvas, cardX, cardY)
-            canvas.create_text(cardX, textY, font = "arial 14 bold",
+            canvas.create_text(cardX, chipsY, font = "arial 14 bold",
                             text = f"{app.game.players[name].balance} chips")
+            canvas.create_text(cardX, nameY, font = "arial 14 bold",
+                                text = f"{name}")
         else:
             game_drawPlayerHand(app, canvas, name)
         index += 1
@@ -401,6 +417,15 @@ def help_keyPressed(app, event):
         app.mode = "pause"
 
 ##############
+# gameOver
+#############
+def gameOver_redrawAll(app, canvas):
+    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
+                        text= "Press enter to play again!")
+def gameOver_keyPressed(app, event):
+    if event.key == "Enter":
+        app.mode = "game"
+##############
 # Main Stuff
 ##############
 def appStarted(app):
@@ -415,7 +440,7 @@ def appStarted(app):
     app.mode = "splash"
     app.board = [ ]
     app.proceed = False
-    app.play = False
+    app.play = False    
     app.turn = 0
     app.stage = app.turn % 3
     app.game = PokerGame()
@@ -423,6 +448,7 @@ def appStarted(app):
     app.upPressed = False
     app.start = True
 
+# from notes
 def getCachedPhotoImage(app, image):
     # stores a cached version of the PhotoImage in the PIL/Pillow image
     if ('cachedPhotoImage' not in image.__dict__):
