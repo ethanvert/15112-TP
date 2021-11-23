@@ -330,7 +330,9 @@ def game_playPreFlop(app):
 
 def game_playFlop(app):
     if not app.proceed:
-        game_playStage(app)
+        if game_playStage(app, app.pos) != None:
+            app.pos += 1
+        else: app.pos = 0
     else:    
         app.turn += 1
         app.stage = app.turn % 4
@@ -340,7 +342,9 @@ def game_playFlop(app):
 
 def game_playTurn(app):
     if not app.proceed:
-        game_playStage(app, )
+        if game_playStage(app, app.pos) != None:
+            app.pos += 1
+        else: app.pos = 0
     else:
         app.turn += 1
         app.stage = app.turn % 4
@@ -350,7 +354,9 @@ def game_playTurn(app):
 
 def game_playRiver(app):
     if not app.proceed:
-        game_playStage(app)
+        if game_playStage(app, app.pos) != None:
+            app.pos += 1
+        else: app.pos = 0
     else:
         winner = app.game.getWinner(app.board)
         for victor in winner[0]:

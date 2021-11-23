@@ -910,7 +910,7 @@ def redrawAll(app, canvas):
 runApp(width=500, height=300)
 
 hwAverage = 99.9         # This is the number you see in autolab
-quizAverage = 89       # The number in autolab will change a tiny bit because of TP1/TP2
+quizAverage = 70       # The number in autolab will change a tiny bit because of TP1/TP2
 midtermAverage = 90.3    # This is the number you see in autolab
 final = midtermAverage # Can replace with a hypothetical final exam score or keep as the midterm average
 tp = 80                # Replace with a hypothetical TP score

@@ -85,12 +85,14 @@ class Bot(Player):
         scoreDict = dict()
 
         for number in PlayingCard.numberNames:
-            for suit in PlayingCard.numberNames:
+            for suit in PlayingCard.suitNames:
                 currentCard = PlayingCard(number, suit)
                 if currentCard in tempBoard:
                     continue
                 else:
                     tempBoard.append(currentCard)
+                    print(self.hand)
+                    print(tempBoard)
                     score = self.deck.calculateHandScore(self.hand, tempBoard)
                     scoreDict[currentCard] = scoreDict.get(currentCard, 
                                                                 score)
@@ -239,4 +241,4 @@ class Bot(Player):
                         return self.bet(10)
                     else:
                         return self.check()
-                
+        return self.fold()
