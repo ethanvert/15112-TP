@@ -5,8 +5,8 @@ import random
 import math
 
 class PokerGame:
-    def __init__(self):
-        self.numPlayers = 0
+    def __init__(self, numPlayers):
+        self.numPlayers = numPlayers
         self.smallBlind, self.bigBlind = 5, 10
         self.players = { }
         self.names = [ ]
@@ -115,11 +115,31 @@ class PokerGame:
 ###########
 def splash_redrawAll(app, canvas):
     canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
-    canvas.create_text(app.width/2, app.height/2, font = "Arial 26",
-                        text = "Press any key to play!")
+    canvas.create_text(app.width/2, 30, font = "courier 40", 
+                        fill = "light gray",
+                        text = "Python Poker")
+    canvas.create_rectangle(app.width/2 - 100, app.height/2 - 30, 
+                            app.width/2 + 100, app.height/2 + 30,
+                            fill = "light gray")
+    canvas.create_text(app.width/2, app.height/2, font = "Courier 30",
+                        text = "Play")
+    canvas.create_rectangle(app.width/2 - 80, app.height/2 + 40, 
+                            app.width/2 + 80, app.height/2 + 60,
+                            fill = "light gray")
+    canvas.create_text(app.width/2, app.height/2+50, font = "Courier 20",
+                        text = "Settings")
+
 
 def splash_keyPressed(app, event):
     app.mode = "game"
+
+def splash_mousePressed(app, event):
+    if (event.x <= app.width/2 + 100 and event.x >= app.width/2 - 100 and
+    event.y <= app.height/2 + 30 and event.y >= app.height/2 - 30):
+        app.mode = "game"
+    elif (event.x <= app.width/2 + 80 and event.x >= app.width/2 - 80 and
+    event.y <= app.height/2 + 60 and event.y >= app.height/2 + 40):
+        app.mode = "settings"
 
 ##########
 # Game
@@ -265,7 +285,7 @@ def game_playRiver(app):
         winner = app.game.getWinner(app.board)
         print(f"{winner[0]} wins this hand! with {winner[1]}")
         for victor in winner[0]:
-            app.game.players[victor].balance += app.game.pot//len(winner(0))
+            app.game.players[victor].balance += app.game.pot//len(winner[0])
         app.game.removeLosers()
         app.turn += 1
         app.stage = app.turn % 4
@@ -337,7 +357,8 @@ def game_drawPlayers(app, canvas):
     for name in app.game.players:
         if type(app.game.players[name]) == Bot:
             if app.game.players[name].position == 0:
-                game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index)
+                game_drawDealerChip(app, canvas, cardAngle, 
+                                    centerX, centerY, index)
             elif app.game.players[name].position == 1:
                 game_drawSmallBlind(app, canvas, cardAngle,     
                                     centerX, centerY, index)
@@ -409,7 +430,6 @@ def game_drawPlayerHand(app, canvas, name):
     canvas.create_text(app.width/2, chipsY, font = "arial 14 bold",
                        text = f"${app.game.players[name].balance}")
 
-
 def game_drawConsole(app, canvas):
     textX = 128
     textY = 3/4 * app.height
@@ -473,6 +493,31 @@ def gameOver_redrawAll(app, canvas):
 def gameOver_keyPressed(app, event):
     if event.key == "Enter":
         app.mode = "game"
+
+#############
+# settings
+#############
+
+def settings_redrawAll(app, canvas):
+    canvas.create_rectangle(0,0,app.width, app.height, fill = "dark green")
+    canvas.create_text(app.width/2, 20, font = "courier 20",
+                        text = "Settings")
+    canvas.create_text(app.width/2, 40, font = "courier 14",
+                        text = "How many players?")
+
+    canvas.create_rectangle(5,5, 80,30, fill = "light gray")
+    canvas.create_text(10, 10, font = "courier 15",
+                        text = "<= back", anchor = "nw")
+
+def settings_mousePressed(app, event):
+    if (event.x <= 80 and event.x >= 5 and
+    event.y <= 30 and event.y >= 5):
+        app.mode = "splash"
+
+def settings_keyPressed(app, event):
+    pass
+
+
 ##############
 # Main Stuff
 ##############
@@ -491,7 +536,7 @@ def appStarted(app):
     app.play = False    
     app.turn = 0
     app.stage = app.turn % 3
-    app.game = PokerGame()
+    app.game = PokerGame(0)
     app.currentMove = ''
     app.upPressed = False
     app.start = True
