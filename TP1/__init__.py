@@ -7,7 +7,7 @@ import math
 class PokerGame:
     def __init__(self):
         self.numPlayers = 0
-        self.smallBlind, self.bigBlind = 1, 2
+        self.smallBlind, self.bigBlind = 5, 10
         self.players = { }
         self.names = [ ]
         self.pot = 0
@@ -43,6 +43,12 @@ class PokerGame:
             self.names.append(player.name)
         self.numPlayers = len(self.players)
 
+    def collectBlinds(self):
+        for player in self.players:
+            if self.players[player].position == 1:
+                self.players[player].bet(self.smallBlind)
+            elif self.players[player].position == 2:
+                self.players[player].bet(self.bigBlind)
 
     def bet(self, amount):
         if amount < self.bigBlind or amount < 2 * self.currentBet:
@@ -96,6 +102,8 @@ class PokerGame:
         for player in self.players:
             self.players[player].playing = True
             self.players[player].played = False
+            self.players[player].position = ((self.players[player].position + 1)
+                                                % len(self.players))
             self.players[player].handScore = 0
         self.gameOver = False
         self.dealt = False
@@ -130,6 +138,7 @@ def game_keyPressed(app, event):
         app.play = True
         app.game.newRound()
         app.board = [ ]
+        app.game.collectBlinds()
     elif event.key == "Enter" and app.play:
         pass
     if event.key == "Escape":
@@ -176,8 +185,9 @@ def game_playerMove(app, name):
 
 def game_botMove(app, name):
     if app.game.currentBet > 0:
-        app.game.pot += app.game.players[name].call(app.game.currentBet)[0]
-        app.currentMove = app.game.players[name].call(app.game.currentBet)[1]
+        move = app.game.players[name].call(app.game.currentBet)
+        app.game.pot += move[0]
+        app.currentMove = move[1]
     else:
         move = app.game.players[name].playHand(app.board)
         app.currentMove = move[1]
@@ -326,28 +336,61 @@ def game_drawPlayers(app, canvas):
 
     for name in app.game.players:
         if type(app.game.players[name]) == Bot:
-            cardAngle += math.pi/4 * index
-            numerator = app.width/4 * app.height/4
-            denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
-                                     (app.height/4)**2 * math.cos(cardAngle)**2)
-            r = numerator/denominator
-            cardX = centerX + r * math.cos(cardAngle)
-            cardY = centerY + r * math.sin(cardAngle)
-            nameY = cardY + 40
-            chipsY = nameY + 14
-            game_drawCard(app, canvas, cardX, cardY)
-            canvas.create_text(cardX, chipsY, font = "arial 14 bold",
-                            text = f"{app.game.players[name].balance} chips")
-            canvas.create_text(cardX, nameY, font = "arial 14 bold",
-                                text = f"{name}")
+            if app.game.players[name].position == 0:
+                game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index)
+            elif app.game.players[name].position == 1:
+                game_drawSmallBlind(app, canvas, cardAngle,     
+                                    centerX, centerY, index)
+            elif app.game.players[name].position == 2:
+                game_drawSmallBlind(app, canvas, cardAngle, 
+                                    centerX, centerY, index)
+
+            game_drawBotHand(app, canvas, name, cardAngle, 
+                             centerX, centerY, index)
         else:
             game_drawPlayerHand(app, canvas, name)
         index += 1
+
+def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
+    cardAngle += math.pi/4 * index
+    numerator = app.width/4 * app.height/4
+    denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
+                                (app.height/4)**2 * math.cos(cardAngle)**2)
+    r = numerator/denominator
+
+    blindX = centerX + r * math.cos(cardAngle) - 50
+    blindY = centerY + r * math.sin(cardAngle)
+    blindR = 40
+    canvas.create_oval(blindX, blindY, blindX+blindR, blindY+blindR, 
+                        fill = "blue")
+
+def game_drawSmallBlind(app, canvas, cardAngle, centerX, centerY, index):
+    pass
+
+def game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index):
+    pass
+def game_drawBotHand(app, canvas, name, cardAngle, centerX, centerY, index):
+        cardAngle += math.pi/4 * index
+        numerator = app.width/4 * app.height/4
+        denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
+                                    (app.height/4)**2 * math.cos(cardAngle)**2)
+        r = numerator/denominator
+        cardX = centerX + r * math.cos(cardAngle)
+        cardY = centerY + r * math.sin(cardAngle)
+        nameY = cardY + 40
+        chipsY = nameY + 14
+        game_drawCard(app, canvas, cardX, cardY)
+        canvas.create_text(cardX, chipsY, font = "arial 14 bold",
+                        text = f"${app.game.players[name].balance}")
+        canvas.create_text(cardX, nameY, font = "arial 14 bold",
+                            text = f"{name}")
 
 def game_drawPlayerHand(app, canvas, name):
     index = 0
     cardWidth = 73
     cardHeight = 98
+    nameY = app.height-34
+    chipsY = app.height - 20
 
     for card in app.game.players[name].hand:
         num = app.numberMap[card.number]
@@ -361,6 +404,11 @@ def game_drawPlayerHand(app, canvas, name):
         canvas.create_image(app.width/2 + index * cardWidth/3, app.height-100,
                             image = photoImage)
         index += 1
+    canvas.create_text(app.width/2, nameY, font = "arial 14 bold",
+                       text = name)
+    canvas.create_text(app.width/2, chipsY, font = "arial 14 bold",
+                       text = f"${app.game.players[name].balance}")
+
 
 def game_drawConsole(app, canvas):
     textX = 128
@@ -373,7 +421,7 @@ def game_drawPot(app, canvas):
     else:
         canvas.create_text(app.width/2, app.height * 2/3, 
                            font = "arial 18 bold",
-                           text = f"Pot: {app.game.pot} Chips")
+                           text = f"Pot: ${app.game.pot}")
 
 def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)

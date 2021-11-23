@@ -20,6 +20,7 @@ class Player:
         # checks to see if player has enough to call
         if (self.balance - bet) >= 0:
             self.balance -= bet # decreases balance by bet
+            print(f"here with a balance of {self.balance}")
             return bet, f"{self.name} called" # returns value of call
         else: # bet is too big
             ret = self.balance # player goes all in
@@ -61,10 +62,6 @@ class Bot(Player):
     #     if board == None:
     #         if self.__Rank()>10:
     #             pass
-
-    def bet(self):
-        print(f"{self.name} betted")
-        return random.randint(10,50)
 
     def playHand(self, board, bet = 0):
         time.sleep(1)
