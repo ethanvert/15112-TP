@@ -46,8 +46,10 @@ class PokerGame:
         for player in self.players:
             if self.players[player].position == 1:
                 self.players[player].bet(self.smallBlind)
+                self.pot += self.smallBlind
             elif self.players[player].position == 2:
                 self.players[player].bet(self.bigBlind)
+                self.pot += self.bigBlind
         self.currentBet = self.bigBlind
 
     def bet(self, amount):
@@ -113,6 +115,7 @@ class PokerGame:
 ###########
 # Start Screen
 ###########
+
 def splash_redrawAll(app, canvas):
     canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
     canvas.create_text(app.width/2, 30, font = "courier 40", 
@@ -129,7 +132,6 @@ def splash_redrawAll(app, canvas):
     canvas.create_text(app.width/2, app.height/2+50, font = "Courier 20",
                         text = "Settings")
 
-
 def splash_keyPressed(app, event):
     app.mode = "game"
 
@@ -144,6 +146,7 @@ def splash_mousePressed(app, event):
 ##########
 # Game
 #########
+
 def game_newPlayer(app, index = 0):
     hand = app.game.dealHand()
     if len(app.game.players) == 0:
@@ -153,7 +156,7 @@ def game_newPlayer(app, index = 0):
         name = Bot.names[index]
         app.game.addPlayer(Bot(hand, len(app.game.players), name))
         index += 1
-    
+
 def game_keyPressed(app, event):
     if event.key == "Enter" and not app.play and app.enterPressed:
         app.play = True
@@ -232,9 +235,10 @@ def game_mousePressed(app, event):
         app.start = False
 
 def game_playerMove(app, name):
+    print(app.game.currentBet)
     if app.game.currentBet > 0:
         move = app.getUserInput("Call, bet, or fold?")
-        if move == "Call" or "call":
+        if move == "Call" or move == "call":
             app.game.players[name].call(app.game.currentBet)
             app.game.call(app.game.currentBet)
             app.currentMove = f"{name} calls the bet of {app.game.currentBet}"
@@ -265,13 +269,13 @@ def game_playerMove(app, name):
 
 def game_botMove(app, name):
     move = app.game.players[name].playHand(app.board, app.game.pot, 
-                                           app.game.currentBet, app.stage) 
+                                           app.game.currentBet) 
     if app.game.currentBet > 0:
         app.game.pot += move[0]
         app.currentMove = move[1]
     else:
         app.currentMove = move[1]
-        
+
         if move[0] > 0:
             if app.game.bet(move[0]) != None:
                 game_botMove(app, name)
@@ -344,7 +348,6 @@ def game_playRiver(app):
         game_playStage(app)
     else:
         winner = app.game.getWinner(app.board)
-        print(f"{winner[0]} wins this hand! with {winner[1]}")
         for victor in winner[0]:
             app.game.players[victor].balance += app.game.pot//len(winner[0])
         app.game.removeLosers()
@@ -354,9 +357,8 @@ def game_playRiver(app):
         app.proceed = False
         app.game.nextStage()
         app.currentMove = f"{winner[0]} wins this hand! with {winner[1]}"
-def game_timerFired(app):
 
-    print(f"{app.proceed}")
+def game_timerFired(app):
     if app.game.gameOver: 
         app.stage = "gameOver"
         return
@@ -369,6 +371,8 @@ def game_timerFired(app):
         if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
             player = app.game.getNumberPlaying()[1][0]
             app.game.players[player].balance += app.game.pot
+            app.currentMove = (f"{app.game.players[player].name} wins this hand! " +
+                                f"with {app.game.players[player].hand}")
             app.turn += (4-app.stage)
             app.stage = 0
             app.play = False
@@ -529,7 +533,6 @@ def game_drawPlayerHand(app, canvas, name):
                        text = f"${app.game.players[name].balance}")
 
 def game_drawConsole(app, canvas):
-    print(app.currentMove)
     textX = 128
     textY = 3/4 * app.height
     canvas.create_text(textX, textY, font = "arial 18", text = app.currentMove)
@@ -563,7 +566,6 @@ def game_drawStart(app, canvas):
                             text = f"{i+1}")
 
 def game_redrawAll(app, canvas):
-    print("here")
     game_drawFelt(app, canvas)
     game_drawBoard(app, canvas)
     game_drawPlayers(app, canvas)
@@ -595,6 +597,7 @@ def pause_keyPressed(app, event):
 ###############
 # help
 ##############
+
 def help_redrawAll(app, canvas):
     canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
                         text= "What do you need help with?")
@@ -606,6 +609,7 @@ def help_keyPressed(app, event):
 ##############
 # gameOver
 #############
+
 def gameOver_redrawAll(app, canvas):
     canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
                         text= "Press enter to play again!")
@@ -636,10 +640,10 @@ def settings_mousePressed(app, event):
 def settings_keyPressed(app, event):
     pass
 
-
 ##############
 # Main Stuff
 ##############
+
 def appStarted(app):
     url1 = ("https://s3.amazonaws.com/images.penguinmagic.com/"
             +"images/products/original/8006b.jpg")

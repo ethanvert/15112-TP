@@ -28,6 +28,7 @@ class Deck:
                    "8" : 8, "9" : 9, "10" : 10, "Jack" : 11, "Queen" : 12, 
                    "King" : 13, "Ace" : 14}
     suitMap = {"Clubs" : "c", "Diamonds" : "d", "Hearts" : "h", "Spades" : "s"}
+    probabilityMap = {}
     def __init__(self):
         self.deck = self.getDeck()
     
