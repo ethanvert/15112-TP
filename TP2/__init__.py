@@ -44,11 +44,11 @@ class PokerGame:
 
     def collectBlinds(self):
         for player in self.players:
-            if self.players[player].position == 1:
+            if self.players[player].position == len(self.players)-1:
                 self.players[player].bet(self.smallBlind)
                 self.pot += self.smallBlind
-            elif self.players[player].position == 2:
-                self.players[player].bet(self.bigBlind)
+            elif self.players[player].position == len(self.players):
+                self.players[player].bet(self.bigBlind) 
                 self.pot += self.bigBlind
         self.currentBet = self.bigBlind
 
@@ -150,7 +150,7 @@ def splash_mousePressed(app, event):
 def game_newPlayer(app, index = 0):
     hand = app.game.dealHand()
     if len(app.game.players) == 0:
-        name = "Player 1"
+        name = app.getUserInput("What is your name?")
         app.game.addPlayer(Player(hand, len(app.game.players), name))
     else:
         name = Bot.names[index]
@@ -163,9 +163,8 @@ def game_keyPressed(app, event):
         app.game.newRound()
         app.board = [ ]
         app.game.collectBlinds()
-        print("hahahahahahhahahahahahah")
     elif event.key == "Enter" and app.play:
-        print("here")
+        return
     elif event.key == "Enter" and not app.enterPressed:
         app.enterPressed = True
         app.play = True
@@ -283,39 +282,45 @@ def game_botMove(app, name):
                 app.game.bet(move[0])
     app.game.players[name].played = True
 
-def game_playStage(app):
+def game_playStage(app, pos):
     hit = False
     for name in app.game.players:
+        print("here")
         if app.game.getNumberPlaying()[0] == 1:
             break
-        if (type(app.game.players[name]) == Player and 
-            app.game.players[name].playing and
-            not app.game.players[name].played):
-            game_playerMove(app, name)
-            break
-        elif (type(app.game.players[name]) == Bot and 
-            app.game.players[name].playing and not
-            app.game.players[name].played):
-            game_botMove(app, name)
+        if app.game.players[name].position == pos:
+            print("uerhweroiahroia")
+            if (type(app.game.players[name]) == Player and 
+                app.game.players[name].playing and
+                not app.game.players[name].played):
+                game_playerMove(app, name)
+            elif (type(app.game.players[name]) == Bot and 
+                app.game.players[name].playing and not
+                app.game.players[name].played):
+                game_botMove(app, name)
             break
 
     for name in app.game.players:
         if not app.game.players[name].played and app.game.players[name].playing:
             hit = True
+            return pos
     if not hit: # meaning that everyone has played for this round
         app.proceed = True
-    return
+        return
 
 def game_playPreFlop(app):
     if not app.game.dealt and app.turn > 0:
         for player in app.game.players:
             hand = app.game.dealHand()
             app.game.players[player].hand = hand
+            print(app.game.players[player])
         app.game.dealt = True
         return
 
     if not app.proceed:
-        game_playStage(app)
+        if game_playStage(app, app.pos) != None:
+            app.pos += 1
+        else: app.pos = 0
     else:
         app.turn += 1
         app.stage = app.turn % 4
@@ -335,7 +340,7 @@ def game_playFlop(app):
 
 def game_playTurn(app):
     if not app.proceed:
-        game_playStage(app)
+        game_playStage(app, )
     else:
         app.turn += 1
         app.stage = app.turn % 4
@@ -421,37 +426,27 @@ def game_drawPlayers(app, canvas):
     index = 0
 
     for name in app.game.players:
-        if type(app.game.players[name]) == Bot:
-            if app.game.players[name].position == 0:
+        if app.game.players[name].position == app.game.numPlayers - 3:
                 game_drawDealerChip(app, canvas, cardAngle, 
                                     centerX, centerY, index)
-            elif app.game.players[name].position == 1:
+        elif app.game.players[name].position == app.game.numPlayers - 2:
                 game_drawSmallBlind(app, canvas, cardAngle,     
                                     centerX, centerY, index)
-            elif app.game.players[name].position == 2:
+        elif app.game.players[name].position == app.game.numPlayers - 1:
                 game_drawBigBlind(app, canvas, cardAngle, 
                                     centerX, centerY, index)
-
+        if type(app.game.players[name]) == Bot:
             game_drawBotHand(app, canvas, name, cardAngle, 
                              centerX, centerY, index)
         else:
-            if app.game.players[name].position == 0:
-                game_drawDealerChip(app, canvas, cardAngle, 
-                                    centerX, centerY, index)
-            elif app.game.players[name].position == 1:
-                game_drawSmallBlind(app, canvas, cardAngle,     
-                                    centerX, centerY, index)
-            elif app.game.players[name].position == 2:
-                game_drawBigBlind(app, canvas, cardAngle, 
-                                    centerX, centerY, index)
             game_drawPlayerHand(app, canvas, name)
         index += 1
 
 def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
     cardAngle += math.pi/4 * index
-    numerator = app.width/4 * app.height/4
-    denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
-                                (app.height/4)**2 * math.cos(cardAngle)**2)
+    numerator = app.width/3 * app.height/3
+    denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
+                                (app.height/3)**2 * math.cos(cardAngle)**2)
     r = numerator/denominator
 
     blindX = centerX + r * math.cos(cardAngle) - 80
@@ -459,14 +454,15 @@ def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
     blindR = 40
     canvas.create_oval(blindX, blindY, blindX+blindR, blindY+blindR, 
                         fill = "blue")
-    canvas.create_text(blindX + blindR/2, blindY + blindR/2, font = "courier 20",
+    canvas.create_text(blindX + blindR/2, blindY + blindR/2, 
+                        font = "courier 20 bold",
                         text = "BB")
 
 def game_drawSmallBlind(app, canvas, cardAngle, centerX, centerY, index):
     cardAngle += math.pi/4 * index
-    numerator = app.width/4 * app.height/4
-    denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
-                                (app.height/4)**2 * math.cos(cardAngle)**2)
+    numerator = app.width/3 * app.height/3
+    denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
+                                (app.height/3)**2 * math.cos(cardAngle)**2)
     r = numerator/denominator
 
     blindX = centerX + r * math.cos(cardAngle) - 80
@@ -474,14 +470,15 @@ def game_drawSmallBlind(app, canvas, cardAngle, centerX, centerY, index):
     blindR = 40
     canvas.create_oval(blindX, blindY, blindX+blindR, blindY+blindR, 
                         fill = "white")
-    canvas.create_text(blindX + blindR/2, blindY + blindR/2, font = "courier 20",
+    canvas.create_text(blindX + blindR/2, blindY + blindR/2, 
+                        font = "courier 20 bold",
                         text = "SB")
 
 def game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index):
     cardAngle += math.pi/4 * index
-    numerator = app.width/4 * app.height/4
-    denominator = math.sqrt((app.width/4)**2 * (math.sin(cardAngle))**2 + 
-                                (app.height/4)**2 * (math.cos(cardAngle)**2))
+    numerator = app.width/3 * app.height/3
+    denominator = math.sqrt((app.width/3)**2 * (math.sin(cardAngle))**2 + 
+                                (app.height/3)**2 * (math.cos(cardAngle)**2))
     r = numerator/denominator
 
     blindX = centerX + r * math.cos(cardAngle) - 80
@@ -489,14 +486,15 @@ def game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index):
     blindR = 40
     canvas.create_oval(blindX, blindY, blindX+blindR, blindY+blindR, 
                         fill = "white")
-    canvas.create_text(blindX + blindR/2, blindY + blindR/2, font = "courier 10",
+    canvas.create_text(blindX + blindR/2, blindY + blindR/2, 
+                        font = "courier 10 bold",
                         text = "Dealer")
 
 def game_drawBotHand(app, canvas, name, cardAngle, centerX, centerY, index):
         cardAngle += math.pi/4 * index
-        numerator = app.width/4 * app.height/4
-        denominator = math.sqrt((app.width/4)**2 * math.sin(cardAngle)**2 + 
-                                    (app.height/4)**2 * math.cos(cardAngle)**2)
+        numerator = app.width/3 * app.height/3
+        denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
+                                    (app.height/3)**2 * math.cos(cardAngle)**2)
         r = numerator/denominator
         cardX = centerX + r * math.cos(cardAngle)
         cardY = centerY + r * math.sin(cardAngle)
@@ -533,8 +531,9 @@ def game_drawPlayerHand(app, canvas, name):
                        text = f"${app.game.players[name].balance}")
 
 def game_drawConsole(app, canvas):
-    textX = 128
-    textY = 3/4 * app.height
+
+    textX = app.width/2
+    textY = app.height/10
     canvas.create_text(textX, textY, font = "arial 18", text = app.currentMove)
 
 def game_drawPot(app, canvas):
@@ -664,6 +663,7 @@ def appStarted(app):
     app.upPressed = False
     app.enterPressed = False 
     app.start = True
+    app.pos = 0
 
 # from notes
 def getCachedPhotoImage(app, image):
