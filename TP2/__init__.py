@@ -1,7 +1,6 @@
 from cmu_112_graphics import *
 from Deck import *
 from Player import *
-import random
 import math
 
 class PokerGame:
@@ -180,6 +179,8 @@ def game_keyPressed(app, event):
 
 def game_mousePressed(app, event):
     buttonSize = 30
+    # this huge block of code all checks for button presses for selecting # of
+    # players
     if app.start and (event.x <= app.width/2 - 2*buttonSize and 
                       event.x >= app.width/2 - 3*buttonSize and
                       event.y <= app.height/2 + buttonSize and 
@@ -264,7 +265,7 @@ def game_playerMove(app, name):
 
 def game_botMove(app, name):
     if app.game.currentBet > 0:
-        move = app.game.players[name].call(app.game.currentBet)
+        move = app.game.players[name].playHand(app.board, app.game.currentBet)
         app.game.pot += move[0]
         app.currentMove = move[1]
     else:
@@ -365,7 +366,6 @@ def game_timerFired(app):
 
     if app.play:
         if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
-            print("hadfashfalsfhaogabgkjasbfjbsfkasbfjkasflkbfjksbf")
             player = app.game.getNumberPlaying()[1][0]
             app.game.players[player].balance += app.game.pot
             app.turn += (4-app.stage)
