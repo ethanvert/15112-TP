@@ -70,12 +70,30 @@ class Bot(Player):
 
     def calculateOuts(self, board):
         tempBoard = copy.deepCopy(board)
+        tempBoard.append(self.hand[0])
+        tempBoard.append(self.hand[1])
+        numOuts = 0
+
+        scoreDict = dict()
 
         for number in PlayingCard.numberNames:
             for suit in PlayingCard.numberNames:
                 currentCard = PlayingCard(number, suit)
-                if currentCard in self.hand:
-                    pass
+                if currentCard in tempBoard:
+                    continue
+                else:
+                    tempBoard.append(currentCard)
+                    if len(board) == 4:
+                        score = Deck.calculateHandScore(self.hand, tempBoard)
+                        scoreDict[currentCard] = scoreDict.get(currentCard, 
+                                                                score)
+                    else:
+                        pass
+                    tempBoard.pop()
+                        
+        for card in scoreDict:
+            
+
                 
                 
                 
@@ -89,7 +107,8 @@ class Bot(Player):
             elif self.preFlopRank() > 
     
     def calculateOddsToWin(self, board):
-        numOfOuts = self.calculateOuts(self, board)
+        numOfOuts = self.calculateOuts(board)
+        
 
 
 

@@ -264,13 +264,14 @@ def game_playerMove(app, name):
     app.game.players[name].played = True
 
 def game_botMove(app, name):
+    move = app.game.players[name].playHand(app.board, app.game.pot, 
+                                           app.game.currentBet, app.stage) 
     if app.game.currentBet > 0:
-        move = app.game.players[name].playHand(app.board, app.game.currentBet)
         app.game.pot += move[0]
         app.currentMove = move[1]
     else:
-        move = app.game.players[name].playHand(app.board)
         app.currentMove = move[1]
+        
         if move[0] > 0:
             if app.game.bet(move[0]) != None:
                 game_botMove(app, name)
