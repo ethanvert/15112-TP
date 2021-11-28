@@ -285,11 +285,9 @@ def game_botMove(app, name):
 def game_playStage(app, pos):
     hit = False
     for name in app.game.players:
-        print("here")
         if app.game.getNumberPlaying()[0] == 1:
             break
         if app.game.players[name].position == pos:
-            print("uerhweroiahroia")
             if (type(app.game.players[name]) == Player and 
                 app.game.players[name].playing and
                 not app.game.players[name].played):

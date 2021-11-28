@@ -80,7 +80,7 @@ class Bot(Player):
         tempBoard.append(self.hand[0])
         tempBoard.append(self.hand[1])
         numOuts = 0
-        maxScore = 0
+        maxScore = (0,"")
 
         scoreDict = dict()
 
@@ -96,7 +96,9 @@ class Bot(Player):
                     score = self.deck.calculateHandScore(self.hand, tempBoard)
                     scoreDict[currentCard] = scoreDict.get(currentCard, 
                                                                 score)
-                    if score > maxScore:
+                    print(f"{score=}")
+                    print(f"{maxScore=}")
+                    if score[0] > maxScore[0]:
                         maxScore = score
                     tempBoard.pop()
                         
@@ -117,8 +119,10 @@ class Bot(Player):
     def calculateOddsToWin(self, board):
         numOfOuts = self.calculateOuts(board)
         if len(board) == 3:
-            return numOfOuts/100 * 2
+            return numOfOuts/100 * 3
         elif len(board) == 4:
+            return numOfOuts/100 * 2
+        else:
             return numOfOuts/100
 
     def calculatePotOdds(self, bet, pot):
@@ -153,18 +157,6 @@ class Bot(Player):
 
         return beats
 
-    # def playHand(self, board, pot, bet = 0):
-    #     time.sleep(1)
-    #     move = random.randint(1,4)
-    #     if move == 1:
-    #         return self.check()
-    #     elif move == 2:
-    #         return self.call(bet)
-    #     elif move == 3:
-    #         return self.bet(10)
-    #     else:
-    #         return self.fold()
-
     # WIP
     def playHand(self, board, pot, numPlayers, bet=0):
         time.sleep(1)
@@ -184,7 +176,6 @@ class Bot(Player):
                     return self.fold()
             elif (self.position <= numPlayers-1 and 
                   self.position >= numPlayers - numPlayers // 3):
-                print("XDDDDDDDDDDDDDDDDD")
                 if bet == 10:
                     return self.call(bet)
                 elif bet > 10:
@@ -197,7 +188,6 @@ class Bot(Player):
                     else:
                         return self.fold()
             else:
-                print("urmom")
                 if preFlopStrength > 20:
                     return self.bet(bet * 3)
                 elif preFlopStrength > 16:
