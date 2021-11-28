@@ -44,10 +44,10 @@ class PokerGame:
 
     def collectBlinds(self):
         for player in self.players:
-            if self.players[player].position == len(self.players)-1:
+            if self.players[player].position == len(self.players)-2:
                 self.players[player].bet(self.smallBlind)
                 self.pot += self.smallBlind
-            elif self.players[player].position == len(self.players):
+            elif self.players[player].position == len(self.players)-1:
                 self.players[player].bet(self.bigBlind) 
                 self.pot += self.bigBlind
         self.currentBet = self.bigBlind
@@ -268,6 +268,7 @@ def game_playerMove(app, name):
 
 def game_botMove(app, name):
     move = app.game.players[name].playHand(app.board, app.game.pot, 
+                                           app.game.numPlayers,
                                            app.game.currentBet) 
     if app.game.currentBet > 0:
         app.game.pot += move[0]
