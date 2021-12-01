@@ -27,7 +27,7 @@ def splash_redrawAll(app, canvas):
     canvas.create_rectangle(app.width/2 - 80, app.height/2 + 40, 
                             app.width/2 + 80, app.height/2 + 60,
                             fill = "light gray")
-    canvas.create_text(app.width/2, app.height/2+50, font = "Courier 16 bold",
+    canvas.create_text(app.width/2, app.height/2+55, font = "Courier 16 bold",
                         text = "Settings")
 
 def splash_mousePressed(app, event):
@@ -918,8 +918,9 @@ def settings_redrawAll(app, canvas):
 ##############
 
 def drawBackButton(app, canvas):
-    canvas.create_rectangle(5,5, 80,30, fill = "light gray")
-    canvas.create_text(10, 10, font = "courier 15",
+    canvas.create_rectangle(app.width/20,app.height/200, app.width/400,app.height/40, fill = "light gray")
+    fontSize = app.width//150
+    canvas.create_text(10, 10, font = f"courier {fontSize} bold",
                         text = "<= back", anchor = "nw")
 
 def appStarted(app):
