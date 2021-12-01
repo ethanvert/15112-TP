@@ -1,116 +1,9 @@
 from cmu_112_graphics import *
 from Deck import *
 from Player import *
+from PokerGame import *
+
 import math
-
-class PokerGame:
-    def __init__(self, numPlayers):
-        self.numPlayers = numPlayers
-        self.smallBlind, self.bigBlind = 5, 10
-        self.players = { }
-        self.names = [ ]
-        self.pot = 0
-        self.deck = Deck()
-        self.gameOver = False
-        self.dealt = True
-        self.currentBet = 0
-        self.numPlaying = 0
-
-    def dealHand(self):
-        hand = (self.deck.deck.pop(), self.deck.deck.pop())
-        return hand
-
-    def dealFlop(self):
-        self.deck.deck.pop()
-        return [self.deck.deck.pop(), self.deck.deck.pop(), 
-                    self.deck.deck.pop()]
-
-    def dealTurnOrRiver(self):
-        self.deck.deck.pop()
-        return self.deck.deck.pop()
-    
-    def removeLosers(self):
-        for name in self.names:
-            if self.players[name].balance <= 0:
-                self.eliminatePlayer(name)
-    def eliminatePlayer(self, name):
-        del self.players[name]
-
-    def addPlayer(self, player):
-        if player.name not in self.players:
-            self.players[player.name] = player
-            self.names.append(player.name)
-        self.numPlayers = len(self.players)
-
-    def collectBlinds(self):
-        for player in self.players:
-            if self.players[player].position == len(self.players)-2:
-                self.players[player].bet(self.smallBlind)
-                self.pot += self.smallBlind
-            elif self.players[player].position == len(self.players)-1:
-                self.players[player].bet(self.bigBlind) 
-                self.pot += self.bigBlind
-        self.currentBet = self.bigBlind
-
-    def bet(self, amount):
-        if amount < self.bigBlind or amount < 2 * self.currentBet:
-            return 1
-        self.currentBet += amount
-        self.pot += amount
-
-    def call(self, amount):
-        self.pot += amount
-        #will add logic for sidepot later
-
-    def getWinner(self, board):
-        scores = dict()
-        highScore = (0,'')
-        playing = self.getNumberPlaying()[1]
-
-        for name in playing:
-            hand = self.players[name].hand
-            score = self.deck.calculateHandScore(hand, board)
-            if score[0] > highScore[0]:
-                highScore = score
-            self.players[name].handScore = score[0]
-
-            if score[0] not in scores:
-                scores[score[0]] = [name]
-            else:
-                scores[score[0]].append(name)
-
-        return scores[highScore[0]], highScore[1]
-
-    # returns the number of players playing during current hand
-    def getNumberPlaying(self):
-        numPlaying = 0
-        players = [ ]
-        for player in self.players:
-            if self.players[player].playing:
-                numPlaying += 1
-                players.append(player)
-        return numPlaying, players
-
-    # when betting is over, sets current bet to 0
-    def nextStage(self):
-        self.currentBet = 0
-        for player in self.players:
-            self.players[player].played = False        
-
-    # when hand is over, resets these variables for next hand
-    def newRound(self):
-        self.deck = Deck()
-        self.numPlayers = len(self.players)
-        for player in self.players:
-            self.players[player].playing = True
-            self.players[player].played = False
-            self.players[player].position = ((self.players[player].position - 1)
-                                                % len(self.players))
-            self.players[player].handScore = 0
-        self.gameOver = False
-        self.dealt = False
-        self.currentBet = 0
-        self.pot = 0 
 
 ###########
 # Start Screen
@@ -132,16 +25,105 @@ def splash_redrawAll(app, canvas):
     canvas.create_text(app.width/2, app.height/2+50, font = "Courier 20",
                         text = "Settings")
 
-def splash_keyPressed(app, event):
-    app.mode = "game"
-
 def splash_mousePressed(app, event):
-    if (event.x <= app.width/2 + 100 and event.x >= app.width/2 - 100 and
-    event.y <= app.height/2 + 30 and event.y >= app.height/2 - 30):
+    if app.numPlayers > 0 and (event.x <= app.width/2 + 100 and 
+                               event.x >= app.width/2 - 100 and 
+                               event.y <= app.height/2 + 30 and 
+                               event.y >= app.height/2 - 30):
         app.mode = "game"
+    elif app.numPlayers == 0 and (event.x <= app.width/2 + 100 and 
+                               event.x >= app.width/2 - 100 and 
+                               event.y <= app.height/2 + 30 and 
+                               event.y >= app.height/2 - 30):
+        app.mode = "players"
     elif (event.x <= app.width/2 + 80 and event.x >= app.width/2 - 80 and
     event.y <= app.height/2 + 60 and event.y >= app.height/2 + 40):
         app.mode = "settings"
+
+##########
+# players
+##########
+
+def players_mousePressed(app, event):
+    buttonSize = 30
+    backX0 = 5
+    backY0 = 5
+    backX1 = 80
+    backY1 = 30
+    # this huge block of code all checks for button presses for selecting # of
+    # players
+    if (event.x <= app.width/2 - 2*buttonSize and 
+                      event.x >= app.width/2 - 3*buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 2
+        app.mode = "settings"
+    elif (event.x <= app.width/2 - buttonSize and 
+                      event.x >= app.width/2 - 2*buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 3
+        app.mode = "settings"
+    elif (event.x <= app.width/2 and 
+                      event.x >= app.width/2 - buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 4
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + buttonSize and 
+                      event.x >= app.width/2 and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 5
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 2 * buttonSize and 
+                      event.x >= app.width/2 + buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 6
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 3 * buttonSize and 
+                      event.x >= app.width/2 + 2 * buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 7
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 4 * buttonSize and 
+                      event.x >= app.width/2 + 3 * buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numPlayers = 8
+        app.mode = "settings"
+
+    if (event.x <= backX1 and event.x >= backX0 and
+        event.y <= backY1 and event.y >= backY0):
+        app.mode = "splash"
+
+def players_drawSelection(app, canvas):
+    buttonSize = 30
+    canvas.create_text(app.width/2, 30, 
+                        font = "Courier 30 bold",
+                        fill = "light gray",
+                        text = "How many players?")
+
+    for i in range(1,8):
+        canvas.create_rectangle(app.width/2 + (i-4.5) * buttonSize, 
+                                app.height/2 - buttonSize,
+                                app.width/2 + (i-3.5) * buttonSize,
+                                app.height/2 + buttonSize,
+                                fill = "light gray",
+                                outline = "black")
+
+        canvas.create_text(app.width/2 + (i-4.5) * buttonSize + buttonSize/2, 
+                            app.height/2, 
+                            font = "courier 20 bold",
+                            fill = "black",
+                            text = f"{i+1}")
+
+def players_redrawAll(app, canvas):
+    canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
+    players_drawSelection(app, canvas)
+    drawBackButton(app, canvas)
 
 ##########
 # Game
@@ -151,6 +133,12 @@ def game_newPlayer(app, index = 0):
     hand = app.game.dealHand()
     if len(app.game.players) == 0:
         name = app.getUserInput("What is your name?")
+
+        if name == None:
+            name = app.getUserInput("Please Re-enter your name")
+        if name == None:
+            name = "Player 1"
+
         app.game.addPlayer(Player(hand, len(app.game.players), name))
     else:
         name = Bot.names[index]
@@ -171,100 +159,68 @@ def game_keyPressed(app, event):
         app.game.collectBlinds()
     if event.key == "Escape":
         app.mode = "pause"
-    if event.key == "Up" and app.upPressed == False:
-        app.upPressed = True
-        app.start = False
-        app.game.dealt = True
-        print(app.game.dealt)
-        for i in range(8):
-            game_newPlayer(app)
 
 def game_mousePressed(app, event):
-    buttonSize = 30
-    # this huge block of code all checks for button presses for selecting # of
-    # players
-    if app.start and (event.x <= app.width/2 - 2*buttonSize and 
-                      event.x >= app.width/2 - 3*buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(2):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 - buttonSize and 
-                      event.x >= app.width/2 - 2*buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(3):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 and 
-                      event.x >= app.width/2 - buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(4):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 + buttonSize and 
-                      event.x >= app.width/2 and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(5):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 + 2 * buttonSize and 
-                      event.x >= app.width/2 + buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(6):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 + 3 * buttonSize and 
-                      event.x >= app.width/2 + 2 * buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(7):
-            game_newPlayer(app, i-1)
-        app.start = False
-    elif app.start and (event.x <= app.width/2 + 4 * buttonSize and 
-                      event.x >= app.width/2 + 3 * buttonSize and
-                      event.y <= app.height/2 + buttonSize and 
-                      event.y >= app.height/2 - buttonSize):
-        for i in range(8):
-            game_newPlayer(app, i-1)
-        app.start = False
+    print("heerrreeee")
+    buttonWidth = app.width/20
+    buttonHeight = app.height/15
+    buttonX0 = app.width - buttonWidth
+
+    if app.isPlayerMove:
+        if (event.x >= buttonX0 and event.x <= buttonX0 + buttonWidth and
+            event.y > app.height - buttonHeight * 4 and 
+            event.y < app.height - buttonHeight * 4 + buttonHeight):
+            if app.game.currentBet > 0:
+                app.game.players[app.currentPlayer].call(app.game.currentBet)
+                app.game.call(app.game.currentBet)
+                app.currentMove = (f"{app.currentPlayer} calls")
+                app.game.players[app.currentPlayer].played = True
+                app.isPlayerMove = False
+            else:
+                app.game.players[app.currentPlayer].check()
+                app.currentMove = f"{app.currentPlayer} checks"
+                app.game.players[app.currentPlayer].played = True
+            app.isPlayerMove = False
+        elif (event.x >= buttonX0 and event.x <= buttonX0 + buttonWidth and 
+            event.y > app.height - buttonHeight * 3 and 
+            event.y < app.height - buttonHeight * 3 + buttonHeight):
+            bet = game_getBet(app)
+            if app.game.currentBet > 0:
+                app.game.bet(bet)
+                app.game.players[app.currentPlayer].bet(bet)
+                app.currentMove = (f"{app.currentPlayer} reraises. " +
+                                   f"Call {app.game.currentBet} chips to play.")
+                app.game.players[app.currentPlayer].played = True
+                app.isPlayerMove = False
+            else:
+                app.game.bet(bet)
+                app.game.players[app.currentPlayer].bet(bet)
+                app.currentMove = (f"{app.currentPlayer} raises" + 
+                                   f"{app.game.currentBet} chips. Call or Fold?")
+                app.game.players[app.currentPlayer].played = True
+                app.isPlayerMove = False
+        elif (event.x >= buttonX0 and event.x <= buttonX0 + buttonWidth and
+            event.y > app.height - buttonHeight * 2 and 
+            event.y < app.height - buttonHeight * 2 + buttonHeight):
+            app.game.players[app.currentPlayer].fold()
+            app.currentMove = f"{app.currentPlayer} folds." 
+            app.game.players[app.currentPlayer].played = True
+            app.isPlayerMove = False
+
+def game_getBet(app, invalidInput = False):
+    try:
+        if invalidInput:
+            bet = int(app.getUserInput("Please insert a whole number of dollars."))
+            return bet
+        else:
+            bet = int(app.getUserInput("How much would you like to bet? "
+                                        + "(type a number)"))
+            return bet
+    except ValueError:
+        game_getBet(app, True)
 
 def game_playerMove(app, name):
-    print(app.game.currentBet)
-    if app.game.currentBet > 0:
-        move = app.getUserInput("Call, bet, or fold?")
-        if move == "Call" or move == "call":
-            app.game.players[name].call(app.game.currentBet)
-            app.game.call(app.game.currentBet)
-            app.currentMove = f"{name} calls the bet of {app.game.currentBet}"
-        elif move == "Bet" or move == "bet":
-            bet = int(app.getUserInput("How much would you like to bet?"))
-            app.game.bet(bet)
-            app.game.players[name].bet(bet)
-            app.currentMove = (f"{name} reraises. " +
-                                f"Call {app.game.currentBet} chips to play.")
-        elif move == "Fold" or move == "fold":
-            app.game.players[name].fold()
-            app.currentMove = f"{name} folds."
-    else:
-        move = app.getUserInput("Check, bet, or fold?")
-        if move == "Check" or move == "check":
-            app.game.players[name].check()
-            app.currentMove = f"{name} checks"
-        elif move == "Bet" or move == "bet":
-            bet = int(app.getUserInput("How much would you like to bet?"))
-            app.game.bet(bet)
-            app.game.players[name].bet(bet)
-            app.currentMove = (f"{name} bets {app.game.currentBet} chips. " +
-                                "Call or Fold?")
-        elif move == "Fold" or move == "fold":
-            app.game.players[name].fold()
-            app.currentMove = f"{name} folds."
-    app.game.players[name].played = True
+    app.isPlayerMove = True
 
 def game_botMove(app, name):
     move = app.game.players[name].playHand(app.board, app.game.pot, 
@@ -292,18 +248,32 @@ def game_playStage(app, pos):
             if (type(app.game.players[name]) == Player and 
                 app.game.players[name].playing and
                 not app.game.players[name].played):
+                app.currentPlayer = name
                 game_playerMove(app, name)
             elif (type(app.game.players[name]) == Bot and 
                 app.game.players[name].playing and not
                 app.game.players[name].played):
+                app.currentPlayer = name
                 game_botMove(app, name)
             break
+    
+    if app.isPlayerMove:
+        return
 
     for name in app.game.players:
-        if not app.game.players[name].played and app.game.players[name].playing:
+        currPlayer = app.game.players[name]
+        if (currPlayer.played and currPlayer.playing and 
+            currPlayer.currentBet < app.game.currentBet):
+            print(f"{currPlayer=}")
+            currPlayer.played = False
             hit = True
-            return pos
-    if not hit: # meaning that everyone has played for this round
+        if not currPlayer.played and currPlayer.playing:
+            print(f"asdl;fkjasdkl;fjsda;klf{currPlayer=}")
+            hit = True
+    
+    if hit:
+        return pos
+    else:
         app.proceed = True
         return
 
@@ -312,14 +282,14 @@ def game_playPreFlop(app):
         for player in app.game.players:
             hand = app.game.dealHand()
             app.game.players[player].hand = hand
-            print(app.game.players[player])
         app.game.dealt = True
         return
 
     if not app.proceed:
         if game_playStage(app, app.pos) != None:
             app.pos += 1
-        else: app.pos = 0
+        app.pos = app.pos % app.game.numPlayers
+        print(app.pos)
     else:
         app.turn += 1
         app.stage = app.turn % 4
@@ -331,7 +301,7 @@ def game_playFlop(app):
     if not app.proceed:
         if game_playStage(app, app.pos) != None:
             app.pos += 1
-        else: app.pos = 0
+        app.pos = app.pos % app.game.numPlayers
     else:    
         app.turn += 1
         app.stage = app.turn % 4
@@ -343,7 +313,7 @@ def game_playTurn(app):
     if not app.proceed:
         if game_playStage(app, app.pos) != None:
             app.pos += 1
-        else: app.pos = 0
+        app.pos = app.pos % app.game.numPlayers
     else:
         app.turn += 1
         app.stage = app.turn % 4
@@ -355,7 +325,7 @@ def game_playRiver(app):
     if not app.proceed:
         if game_playStage(app, app.pos) != None:
             app.pos += 1
-        else: app.pos = 0
+        app.pos = app.pos % app.game.numPlayers
     else:
         winner = app.game.getWinner(app.board)
         for victor in winner[0]:
@@ -366,6 +336,7 @@ def game_playRiver(app):
         app.play = False
         app.proceed = False
         app.game.nextStage()
+        app.pos = 0
         app.currentMove = f"{winner[0]} wins this hand! with {winner[1]}"
 
 def game_timerFired(app):
@@ -373,30 +344,37 @@ def game_timerFired(app):
         app.stage = "gameOver"
         return
 
-    if len(app.game.players) == 1:
-        app.game.gameOver = True
-        return
+    if not app.isPlayerMove:
+        if app.start:
+            for i in range(app.numPlayers):
+                game_newPlayer(app, i-1)
+            app.start = False
 
-    if app.play:
-        if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
-            player = app.game.getNumberPlaying()[1][0]
-            app.game.players[player].balance += app.game.pot
-            app.currentMove = (f"{app.game.players[player].name} wins this hand! " +
-                                f"with {app.game.players[player].hand}")
-            app.turn += (4-app.stage)
-            app.stage = 0
-            app.play = False
-            app.proceed = False
+        if len(app.game.players) == 1:
+            app.game.gameOver = True
+            app.mode = "gameOver"
             return
 
-        if app.stage == 0:
-            game_playPreFlop(app)
-        elif app.stage == 1:
-            game_playFlop(app)
-        elif app.stage == 2:
-            game_playTurn(app)
-        elif app.stage == 3:
-            game_playRiver(app)
+        if app.play:
+            if app.game.numPlayers > 1 and app.game.getNumberPlaying()[0] == 1:
+                player = app.game.getNumberPlaying()[1][0]
+                app.game.players[player].balance += app.game.pot
+                app.currentMove = (f"{app.game.players[player].name} wins this hand! " +
+                                    f"with {app.game.players[player].hand}")
+                app.turn += (4-app.stage)
+                app.stage = 0
+                app.play = False
+                app.proceed = False
+                return
+
+            if app.stage == 0:
+                game_playPreFlop(app)
+            elif app.stage == 1:
+                game_playFlop(app)
+            elif app.stage == 2:
+                game_playTurn(app)
+            elif app.stage == 3:
+                game_playRiver(app)
         
 def game_drawFelt(app, canvas):
     canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
@@ -431,6 +409,7 @@ def game_drawPlayers(app, canvas):
     index = 0
 
     for name in app.game.players:
+        folded = False
         if app.game.players[name].position == app.game.numPlayers - 3:
                 game_drawDealerChip(app, canvas, cardAngle, 
                                     centerX, centerY, index)
@@ -441,10 +420,19 @@ def game_drawPlayers(app, canvas):
                 game_drawBigBlind(app, canvas, cardAngle, 
                                     centerX, centerY, index)
         if type(app.game.players[name]) == Bot:
-            game_drawBotHand(app, canvas, name, cardAngle, 
+            if app.game.players[name].playing:
+                game_drawBotHand(app, canvas, name, cardAngle, 
                              centerX, centerY, index)
+            else:
+                folded = True
+                game_drawBotHand(app, canvas, name, cardAngle, 
+                             centerX, centerY, index, folded)
         else:
-            game_drawPlayerHand(app, canvas, name)
+            if app.game.players[name].playing:
+                game_drawPlayerHand(app, canvas, name)
+            else:
+                folded = True
+                game_drawPlayerHand(app, canvas, name, folded)
         index += 1
 
 def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
@@ -495,7 +483,8 @@ def game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index):
                         font = "courier 10 bold",
                         text = "Dealer")
 
-def game_drawBotHand(app, canvas, name, cardAngle, centerX, centerY, index):
+def game_drawBotHand(app, canvas, name, cardAngle, centerX, 
+                     centerY, index, folded = False):
         cardAngle += math.pi/4 * index
         numerator = app.width/3 * app.height/3
         denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
@@ -505,13 +494,18 @@ def game_drawBotHand(app, canvas, name, cardAngle, centerX, centerY, index):
         cardY = centerY + r * math.sin(cardAngle)
         nameY = cardY + 40
         chipsY = nameY + 14
-        game_drawCard(app, canvas, cardX, cardY)
-        canvas.create_text(cardX, chipsY, font = "arial 14 bold",
+
+        if folded:
+            canvas.create_text(cardX, cardY, font = "courier 20 bold",
+                                text = "Folded")
+        else:
+            game_drawCard(app, canvas, cardX, cardY)
+        canvas.create_text(cardX, chipsY, font = "courier 14 bold",
                         text = f"${app.game.players[name].balance}")
-        canvas.create_text(cardX, nameY, font = "arial 14 bold",
+        canvas.create_text(cardX, nameY, font = "courier 14 bold",
                             text = f"{name}")
 
-def game_drawPlayerHand(app, canvas, name):
+def game_drawPlayerHand(app, canvas, name, folded = False):
     index = 0
     cardWidth = 73
     cardHeight = 98
@@ -523,51 +517,99 @@ def game_drawPlayerHand(app, canvas, name):
         suit = app.suitMap[card.suit]
         cX = cardWidth * num
         cY = cardHeight * suit
-        image = app.cardImage2.crop((cX, cY, 
-                                     cX + cardWidth, cY + cardHeight))
-        image = app.scaleImage(image, 7/8)
-        photoImage = getCachedPhotoImage(app, image)
-        canvas.create_image(app.width/2 + index * cardWidth/3, app.height-100,
-                            image = photoImage)
+
+        if folded:
+            canvas.create_text(app.width/2, app.height - 100, 
+                               font = "courier 20 bold",
+                               text = "Folded")
+            break
+        else:
+            image = app.cardImage2.crop((cX, cY, 
+                                        cX + cardWidth, cY + cardHeight))
+            image = app.scaleImage(image, 7/8)
+            photoImage = getCachedPhotoImage(app, image)
+            canvas.create_image(app.width/2 + index * cardWidth/3, app.height-100,
+                                image = photoImage)
         index += 1
-    canvas.create_text(app.width/2, nameY, font = "arial 14 bold",
+    canvas.create_text(app.width/2, nameY, font = "courier 14 bold",
                        text = name)
-    canvas.create_text(app.width/2, chipsY, font = "arial 14 bold",
+    canvas.create_text(app.width/2, chipsY, font = "courier 14 bold",
                        text = f"${app.game.players[name].balance}")
 
 def game_drawConsole(app, canvas):
 
     textX = app.width/2
     textY = app.height/10
-    canvas.create_text(textX, textY, font = "arial 18", text = app.currentMove)
+    canvas.create_text(textX, textY, font = "courier 18 bold", 
+                       text = app.currentMove)
 
 def game_drawPot(app, canvas):
     if app.game.pot == 0:
         return
     else:
         canvas.create_text(app.width/2, app.height * 2/3, 
-                           font = "arial 18 bold",
+                           font = "courier 18 bold",
                            text = f"Pot: ${app.game.pot}")
 
-def game_drawStart(app, canvas):
-    buttonSize = 30
-    canvas.create_text(app.width/2, 30, 
-                        font = "Courier 30 bold",
-                        fill = "light gray",
-                        text = "How many players?")
-    for i in range(1,8):
-        canvas.create_rectangle(app.width/2 + (i-4) * buttonSize, 
-                                app.height/2 - buttonSize,
-                                app.width/2 + (i-3) * buttonSize,
-                                app.height/2 + buttonSize,
-                                fill = "light gray",
-                                outline = "black")
+def game_drawCheckButton(app, canvas):
+    buttonWidth = app.width/20
+    buttonHeight = app.height/15
+    buttonX0 = app.width - buttonWidth * 1.1
+    buttonY0 = app.height - buttonHeight * 4
 
-        canvas.create_text(app.width/2 + (i-4) * buttonSize + buttonSize/2, 
-                            app.height/2, 
-                            font = "courier 20 bold",
-                            fill = "black",
-                            text = f"{i+1}")
+    canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
+                            buttonY0 + buttonHeight, fill = "light gray",
+                            width = 5)
+    canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
+                        font = f"courier 20 bold",
+                        text = "Check")
+
+def game_drawCallButton(app, canvas):
+    buttonWidth = app.width/20
+    buttonHeight = app.height/15
+    buttonX0 = app.width - buttonWidth * 1.1
+    buttonY0 = app.height - buttonHeight * 4
+
+    canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
+                            buttonY0 + buttonHeight, fill = "light gray",
+                            width = 5)
+    canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
+                        font = f"courier 20 bold",
+                        text = "Call")
+
+def game_drawBetButton(app, canvas):
+    buttonWidth = app.width/20
+    buttonHeight = app.height/15
+    buttonX0 = app.width - buttonWidth * 1.1
+    buttonY0 = app.height - buttonHeight * 3
+
+    canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
+                            buttonY0 + buttonHeight, fill = "red",
+                            width = 5)
+    canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
+                        font = f"courier 20 bold",
+                        text = "Bet")
+
+def game_drawFoldButton(app, canvas):
+    buttonWidth = app.width/20
+    buttonHeight = app.height/15
+    buttonX0 = app.width - buttonWidth * 1.1
+    buttonY0 = app.height - buttonHeight * 2
+
+    canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
+                            buttonY0 + buttonHeight, fill = "Yellow",
+                            width = 5)
+    canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
+                        font = f"courier 20 bold",
+                        text = "Fold")
+
+def game_drawButtons(app, canvas):
+    if app.game.currentBet > 0:
+        game_drawCallButton(app, canvas)
+    else:
+        game_drawCheckButton(app, canvas)
+    game_drawBetButton(app, canvas)
+    game_drawFoldButton(app, canvas)
 
 def game_redrawAll(app, canvas):
     game_drawFelt(app, canvas)
@@ -575,13 +617,11 @@ def game_redrawAll(app, canvas):
     game_drawPlayers(app, canvas)
     game_drawConsole(app, canvas)
     game_drawPot(app, canvas)
-
-    if app.start:
-        game_drawStart(app, canvas)
+    game_drawButtons(app, canvas)
               
     if not app.play and not app.start:
         canvas.create_text(app.width/2, app.height/2, 
-                            font = "arial 18 bold",
+                            font = "courier 18 bold",
                             text = "press enter to play!")
 
 ###########
@@ -589,7 +629,7 @@ def game_redrawAll(app, canvas):
 ###########
 
 def pause_redrawAll(app, canvas):
-    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
+    canvas.create_text(app.width/2, app.height/2, font = "courier 26 bold", 
                         text= "Paused, press enter or esc to resume")
 
 def pause_keyPressed(app, event):
@@ -615,8 +655,10 @@ def help_keyPressed(app, event):
 #############
 
 def gameOver_redrawAll(app, canvas):
+    canvas.create_text(app.width/2, 30, fold = "courier 30 bold",
+                        text = "Game Over!")
     canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
-                        text= "Press enter to play again!")
+                        text= "Return to Main Menu")
 def gameOver_keyPressed(app, event):
     if event.key == "Enter":
         app.mode = "game"
@@ -625,21 +667,36 @@ def gameOver_keyPressed(app, event):
 # settings
 #############
 
+def settings_drawPlayersButton(app, canvas):
+    buttonWidth = app.width/10
+    buttonHeight = app.height/10
+
+    canvas.create_rectangle(app.width/2 - buttonWidth, 40 + buttonHeight,
+                            app.width/2 + buttonWidth, 40 + 2 * buttonHeight,
+                            fill = "light gray")
+    canvas.create_text(app.width/2, 40 + 1.5 * buttonHeight, 
+                        font = "courier 14", fill = "black",
+                        text = "Select Number of Players")
+
 def settings_redrawAll(app, canvas):
     canvas.create_rectangle(0,0,app.width, app.height, fill = "dark green")
-    canvas.create_text(app.width/2, 20, font = "courier 20",
+    canvas.create_text(app.width/2, 20, font = "courier 30 bold",
                         text = "Settings")
-    canvas.create_text(app.width/2, 40, font = "courier 14",
-                        text = "How many players?")
-
-    canvas.create_rectangle(5,5, 80,30, fill = "light gray")
-    canvas.create_text(10, 10, font = "courier 15",
-                        text = "<= back", anchor = "nw")
+    settings_drawPlayersButton(app, canvas)
+    drawBackButton(app, canvas)
 
 def settings_mousePressed(app, event):
+    buttonWidth = app.width/10
+    buttonHeight = app.height/10
     if (event.x <= 80 and event.x >= 5 and
     event.y <= 30 and event.y >= 5):
         app.mode = "splash"
+
+    if (event.x <= app.width/2 + buttonWidth and 
+        event.x >= app.width/2 - buttonWidth and
+        event.y <= 40 + 2 * buttonHeight and 
+        event.y >= 40 + buttonHeight):
+        app.mode = "players"
 
 def settings_keyPressed(app, event):
     pass
@@ -647,6 +704,11 @@ def settings_keyPressed(app, event):
 ##############
 # Main Stuff
 ##############
+
+def drawBackButton(app, canvas):
+    canvas.create_rectangle(5,5, 80,30, fill = "light gray")
+    canvas.create_text(10, 10, font = "courier 15",
+                        text = "<= back", anchor = "nw")
 
 def appStarted(app):
     url1 = ("https://s3.amazonaws.com/images.penguinmagic.com/"
@@ -669,6 +731,9 @@ def appStarted(app):
     app.enterPressed = False 
     app.start = True
     app.pos = 0
+    app.numPlayers = 8
+    app.currentPlayer = ""
+    app.isPlayerMove = False
 
 # from notes
 def getCachedPhotoImage(app, image):
@@ -678,7 +743,7 @@ def getCachedPhotoImage(app, image):
     return image.cachedPhotoImage
 
 def playPoker():
-    runApp(width=1024, height=512)
+    runApp(width=1920, height=1080)
 
 def main():
     playPoker()

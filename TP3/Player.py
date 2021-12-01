@@ -21,8 +21,8 @@ class Player:
     def call(self, bet):
         # checks to see if player has enough to call
         if (self.balance - bet) >= 0:
-            self.balance -= bet # decreases balance by bet
-            print(f"here with a balance of {self.balance}")
+            self.balance -= bet - self.currentBet # decreases balance by bet
+            self.currentBet += bet - self.currentBet
             return (bet - self.currentBet), f"{self.name} called" # returns value of call
         else: # bet is too big
             ret = self.balance # player goes all in
@@ -36,7 +36,7 @@ class Player:
         else:
             self.currentBet = bet
             return self.balance
-        return bet, f"{self.name} bets {bet} chips"
+        return bet, f"{self.name} raises {bet} chips"
 
     def fold(self):
         self.playing = False
@@ -91,13 +91,8 @@ class Bot(Player):
                     continue
                 else:
                     tempBoard.append(currentCard)
-                    print(self.hand)
-                    print(tempBoard)
                     score = self.deck.calculateHandScore(self.hand, tempBoard)
-                    scoreDict[currentCard] = scoreDict.get(currentCard, 
-                                                                score)
-                    print(f"{score=}")
-                    print(f"{maxScore=}")
+                    scoreDict[currentCard] = scoreDict.get(currentCard, score)
                     if score[0] > maxScore[0]:
                         maxScore = score
                     tempBoard.pop()
@@ -109,15 +104,18 @@ class Bot(Player):
         return numOuts     
 
     def calculateHandStrength(self, board):
-        if board == None:
+        if board == [ ]:
             if self.preFlopRank() > 10:
                 self.bet(30)
             elif self.preFlopRank() > 10:
                 pass
-        return 14
+        else:
+            handScore = self.deck.calculateHandScore(self.hand, board)
+            return handScore[0]
 
     def calculateOddsToWin(self, board):
         numOfOuts = self.calculateOuts(board)
+
         if len(board) == 3:
             return numOfOuts/100 * 3
         elif len(board) == 4:
@@ -216,19 +214,38 @@ class Bot(Player):
                     else:
                         return self.check()
             else:
-                odds = self.calculateOddsToWin(board)
-                if bet > 0:
-                    if odds > potOdds:
-                        return self.call(bet)
+                if len(board) < 5:
+                    odds = self.calculateOddsToWin(board)
+
+                    if bet > 0:
+                        if odds > potOdds:
+                            return self.call(bet)
+                        else:
+                            return self.fold()
                     else:
-                        return self.fold()
+                        if odds > self.tightness * .20:
+                            return self.bet(pot)
+                        elif odds > self.tightness * .15:
+                            return self.bet(pot//2)
+                        elif odds > self.tightness * .10:
+                            return self.bet(10)
+                        else:
+                            return self.check()
                 else:
-                    if odds > self.tightness * .25:
-                        return self.bet(pot)
-                    elif odds > self.tightness * .20:
-                        return self.bet(pot//2)
-                    elif odds > self.tightness * .15:
-                        return self.bet(10)
+                    beats = self.calculateBeats(board)
+
+                    if len(beats) <= 10 / self.tightness:
+                        if bet > 0:
+                            return self.call(bet)
+                        else:
+                            if len(beats) <= 10 / self.tightness * 1:
+                                return self.bet(10)
+                            elif len(beats) <= 10 / self.tightness * 2:
+                                return self.bet(pot//2)
+                            elif len(beats) <= 10 / self.tightness * 3:
+                                return self.bet(pot)
                     else:
-                        return self.check()
-        return self.fold()
+                        if bet > 0:
+                            return self.fold()
+                        else:
+                            return self.check()
