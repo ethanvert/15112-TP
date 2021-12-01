@@ -161,7 +161,6 @@ def game_keyPressed(app, event):
         app.mode = "pause"
 
 def game_mousePressed(app, event):
-    print("heerrreeee")
     buttonWidth = app.width/20
     buttonHeight = app.height/15
     buttonX0 = app.width - buttonWidth
@@ -189,14 +188,15 @@ def game_mousePressed(app, event):
                 app.game.bet(bet)
                 app.game.players[app.currentPlayer].bet(bet)
                 app.currentMove = (f"{app.currentPlayer} reraises. " +
-                                   f"Call {app.game.currentBet} chips to play.")
+                                   f"Call {bet} chips to play.")
+                app.game.currentBet = bet
                 app.game.players[app.currentPlayer].played = True
                 app.isPlayerMove = False
             else:
                 app.game.bet(bet)
                 app.game.players[app.currentPlayer].bet(bet)
-                app.currentMove = (f"{app.currentPlayer} raises" + 
-                                   f"{app.game.currentBet} chips. Call or Fold?")
+                app.currentMove = (f"{app.currentPlayer} puts in {bet} chips.")
+                app.game.currentBet = bet
                 app.game.players[app.currentPlayer].played = True
                 app.isPlayerMove = False
         elif (event.x >= buttonX0 and event.x <= buttonX0 + buttonWidth and
@@ -217,7 +217,7 @@ def game_getBet(app, invalidInput = False):
                                         + "(type a number)"))
             return bet
     except ValueError:
-        game_getBet(app, True)
+        return game_getBet(app, True)
 
 def game_playerMove(app, name):
     app.isPlayerMove = True
@@ -244,6 +244,7 @@ def game_playStage(app, pos):
     for name in app.game.players:
         if app.game.getNumberPlaying()[0] == 1:
             break
+        
         if app.game.players[name].position == pos:
             if (type(app.game.players[name]) == Player and 
                 app.game.players[name].playing and
@@ -262,15 +263,14 @@ def game_playStage(app, pos):
 
     for name in app.game.players:
         currPlayer = app.game.players[name]
+
         if (currPlayer.played and currPlayer.playing and 
             currPlayer.currentBet < app.game.currentBet):
-            print(f"{currPlayer=}")
             currPlayer.played = False
             hit = True
         if not currPlayer.played and currPlayer.playing:
-            print(f"asdl;fkjasdkl;fjsda;klf{currPlayer=}")
             hit = True
-    
+
     if hit:
         return pos
     else:
@@ -296,6 +296,14 @@ def game_playPreFlop(app):
         app.game.nextStage()
         app.board += app.game.dealFlop()
         app.proceed = False
+        for i in range(app.game.numPlayers):
+            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            
+            for name in app.game.players:
+                currPlayer = app.game.players[name]
+                if currPlayer.playing and currPlayer.position == tempPos:
+                    app.pos = tempPos
+                    return
 
 def game_playFlop(app):
     if not app.proceed:
@@ -308,6 +316,14 @@ def game_playFlop(app):
         app.game.nextStage()
         app.board.append(app.game.dealTurnOrRiver())
         app.proceed = False
+        for i in range(app.game.numPlayers):
+            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            
+            for name in app.game.players:
+                currPlayer = app.game.players[name]
+                if currPlayer.playing and currPlayer.position == tempPos:
+                    app.pos = tempPos
+                    return
 
 def game_playTurn(app):
     if not app.proceed:
@@ -320,6 +336,14 @@ def game_playTurn(app):
         app.game.nextStage()
         app.board.append(app.game.dealTurnOrRiver())
         app.proceed = False
+        for i in range(app.game.numPlayers):
+            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            
+            for name in app.game.players:
+                currPlayer = app.game.players[name]
+                if currPlayer.playing and currPlayer.position == tempPos:
+                    app.pos = tempPos
+                    return
 
 def game_playRiver(app):
     if not app.proceed:
@@ -667,6 +691,23 @@ def gameOver_keyPressed(app, event):
 # settings
 #############
 
+def settings_keyPressed(app, event):
+    if event.key == "Escape":
+        app.mode = "splash"
+
+def settings_mousePressed(app, event):
+    buttonWidth = app.width/10
+    buttonHeight = app.height/10
+    if (event.x <= 80 and event.x >= 5 and
+    event.y <= 30 and event.y >= 5):
+        app.mode = "splash"
+
+    if (event.x <= app.width/2 + buttonWidth and 
+        event.x >= app.width/2 - buttonWidth and
+        event.y <= 40 + 2 * buttonHeight and 
+        event.y >= 40 + buttonHeight):
+        app.mode = "players"
+
 def settings_drawPlayersButton(app, canvas):
     buttonWidth = app.width/10
     buttonHeight = app.height/10
@@ -684,19 +725,6 @@ def settings_redrawAll(app, canvas):
                         text = "Settings")
     settings_drawPlayersButton(app, canvas)
     drawBackButton(app, canvas)
-
-def settings_mousePressed(app, event):
-    buttonWidth = app.width/10
-    buttonHeight = app.height/10
-    if (event.x <= 80 and event.x >= 5 and
-    event.y <= 30 and event.y >= 5):
-        app.mode = "splash"
-
-    if (event.x <= app.width/2 + buttonWidth and 
-        event.x >= app.width/2 - buttonWidth and
-        event.y <= 40 + 2 * buttonHeight and 
-        event.y >= 40 + buttonHeight):
-        app.mode = "players"
 
 def settings_keyPressed(app, event):
     pass
@@ -735,7 +763,7 @@ def appStarted(app):
     app.currentPlayer = ""
     app.isPlayerMove = False
 
-# from notes
+# from notes @ https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#cachingPhotoImages
 def getCachedPhotoImage(app, image):
     # stores a cached version of the PhotoImage in the PIL/Pillow image
     if ('cachedPhotoImage' not in image.__dict__):

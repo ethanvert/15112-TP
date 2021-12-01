@@ -32,9 +32,9 @@ class Player:
     def bet(self, bet):
         if bet <= self.balance:
             self.balance -= bet
-            self.currentBet = bet
+            self.currentBet += bet
         else:
-            self.currentBet = bet
+            self.currentBet += self.balance
             return self.balance
         return bet, f"{self.name} raises {bet} chips"
 
@@ -117,9 +117,9 @@ class Bot(Player):
         numOfOuts = self.calculateOuts(board)
 
         if len(board) == 3:
-            return numOfOuts/100 * 3
-        elif len(board) == 4:
             return numOfOuts/100 * 2
+        elif len(board) == 4:
+            return numOfOuts/100 
         else:
             return numOfOuts/100
 
@@ -215,28 +215,96 @@ class Bot(Player):
                         return self.check()
             else:
                 if len(board) < 5:
-                    odds = self.calculateOddsToWin(board)
-
-                    if bet > 0:
-                        if odds > potOdds:
-                            return self.call(bet)
+                    if (self.calculateHandStrength(board) > 
+                                                   30 + (self.tightness * 4.6)):
+                        if bet > 0:
+                            if (self.calculatePotOdds(bet, pot) > 
+                                                        1/(4 + self.tightness)):
+                                return self.bet(bet * 3)
+                            elif (self.calculatePotOdds(bet, pot) > 
+                                                        1/(3 + self.tightness)):
+                                return self.bet(bet * 2)
+                            elif (self.calculatePotOdds(bet, pot) > 
+                                                            1/(self.tightness)):
+                                decision = random.randint(0,1)
+                                if decision:
+                                    return self.call(bet)
+                                else:
+                                    return self.fold()
                         else:
-                            return self.fold()
+                            if self.tightness == 3:
+                                if (self.calculateHandStrength(board) > 
+                                                 55.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//3)
+                                elif (self.calculateHandStrength(board) > 
+                                                 70.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//2)
+                                elif (self.calculateHandStrength(board) > 
+                                                 85.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot)
+                                elif (self.calculateHandStrength(board) > 
+                                                100.4 + (self.tightness * 4.6)):
+                                    return self.bet(self.balance)
+                                else:
+                                    return self.check()
+                            elif self.tightness == 2:
+                                if (self.calculateHandStrength(board) > 
+                                                 40.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//3)
+                                elif (self.calculateHandStrength(board) > 
+                                                 55.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//2)
+                                elif (self.calculateHandStrength(board) > 
+                                                 70.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot)
+                                elif (self.calculateHandStrength(board) > 
+                                                85.4 + (self.tightness * 4.6)):
+                                    return self.bet(self.balance)
+                                else:
+                                    return self.check()
+                            else:
+                                if (self.calculateHandStrength(board) > 
+                                                 25.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//3)
+                                elif (self.calculateHandStrength(board) > 
+                                                 40.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot//2)
+                                elif (self.calculateHandStrength(board) > 
+                                                 55.4 + (self.tightness * 4.6)):
+                                    return self.bet(pot)
+                                elif (self.calculateHandStrength(board) > 
+                                                70.4 + (self.tightness * 4.6)):
+                                    return self.bet(self.balance)
+                                else:
+                                    return self.check()
                     else:
-                        if odds > self.tightness * .20:
-                            return self.bet(pot)
-                        elif odds > self.tightness * .15:
-                            return self.bet(pot//2)
-                        elif odds > self.tightness * .10:
-                            return self.bet(10)
+                        odds = self.calculateOddsToWin(board)
+
+                        if bet > 0:
+                            if odds > potOdds:
+                                return self.call(bet)
+                            else:
+                                return self.fold()
                         else:
-                            return self.check()
+                            if odds > self.tightness * .20:
+                                return self.bet(pot)
+                            elif odds > self.tightness * .15:
+                                return self.bet(pot//2)
+                            elif odds > self.tightness * .10:
+                                return self.bet(10)
+                            else:
+                                return self.check()
                 else:
                     beats = self.calculateBeats(board)
 
                     if len(beats) <= 10 / self.tightness:
                         if bet > 0:
-                            return self.call(bet)
+                            if self.calculatePotOdds(bet, pot) > 1/(4 + self.tightness):
+                                return self.bet(bet * 3)
+                            elif self.calculatePotOdds(bet, pot) > 1/(3 + self.tightness):
+                                return self.bet(bet * 2)
+                            else:
+                                return self.call(bet)
                         else:
                             if len(beats) <= 10 / self.tightness * 1:
                                 return self.bet(10)

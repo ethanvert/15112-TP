@@ -1,6 +1,6 @@
 import random
 
-# from notes
+# playing card is mostly from notes @ https://www.cs.cmu.edu/~112/notes/notes-oop-part3.html#oopyCardsDemo
 class PlayingCard:
     numberNames = ["Ace", "2", "3", "4", "5", "6", "7",
                    "8", "9", "10", "Jack", "Queen", "King"]
