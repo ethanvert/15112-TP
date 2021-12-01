@@ -261,12 +261,9 @@ def game_playStage(app, pos):
                 game_botMove(app, name)
             break
     
-    if app.isPlayerMove:
-        return
-
     for name in app.game.players:
         currPlayer = app.game.players[name]
-        
+        print(f"{app.game.currentBet=}")
 
         if (currPlayer.played and currPlayer.playing and 
             currPlayer.currentBet < app.game.currentBet):
@@ -280,6 +277,8 @@ def game_playStage(app, pos):
 
     if hit:
         return pos
+    elif app.isPlayerMove:
+        return
     else:
         app.proceed = True
         return

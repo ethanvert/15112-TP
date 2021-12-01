@@ -57,7 +57,7 @@ class PokerGame:
         if amount < self.bigBlind or amount < 2 * self.currentBet:
             return 1
             
-        self.currentBet += amount
+        self.currentBet = amount
         self.pot += amount
 
     def call(self, amount):
