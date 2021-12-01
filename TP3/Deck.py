@@ -1,6 +1,11 @@
+################
+# Contains PlayingCard class and Deck class. Deck class contains methods and attributes
+# necessary for scoring hands.
+################
+
 import random
 
-# playing card is mostly from notes @ https://www.cs.cmu.edu/~112/notes/notes-oop-part3.html#oopyCardsDemo
+# PlayingCard is from notes @ https://www.cs.cmu.edu/~112/notes/notes-oop-part3.html#oopyCardsDemo
 class PlayingCard:
     numberNames = ["Ace", "2", "3", "4", "5", "6", "7",
                    "8", "9", "10", "Jack", "Queen", "King"]
@@ -22,20 +27,21 @@ class PlayingCard:
         return f'<{self.number} of {self.suit}>'
 
 # I got heavy inspiration for the hand scoring algo from 
-# https://towardsdatascience.com/poker-with-python-how-to-score-all-hands-in-texas-holdem-6fd750ef73d
+# https://towardsdatascience.com/poker-with-python-how-to-score-all-hands-in-texas-holdem-6fd750ef73d .
+# I wrote it from scratch to fit my purposes, referencing it every so often.
 class Deck:
     numberScoreMap = {"2" : 2, "3" : 3, "4" : 4, "5" : 5, "6" : 6, "7" : 7,
                    "8" : 8, "9" : 9, "10" : 10, "Jack" : 11, "Queen" : 12, 
                    "King" : 13, "Ace" : 14}
     suitMap = {"Clubs" : "c", "Diamonds" : "d", "Hearts" : "h", "Spades" : "s"}
-    probabilityMap = {}
+
     def __init__(self):
         self.deck = self.getDeck()
     
     def __repr__(self):
         return f"Hi This is the deck {self.deck}"
     
-    # from notes
+    # from notes @ https://www.cs.cmu.edu/~112/notes/notes-oop-part3.html#oopyCardsDemo
     def getDeck(shuffled=True):
         deck = [ ]
         for number in range(0,13):

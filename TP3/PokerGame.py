@@ -1,3 +1,8 @@
+#####################
+# Contains PokerGame class with all of the attributes and methods pertaining to the
+# a specific game being played.
+#####################
+
 from Deck import *
 from Player import *
 
@@ -57,7 +62,7 @@ class PokerGame:
         if amount < self.bigBlind or amount < 2 * self.currentBet:
             return 1
             
-        self.currentBet = amount
+        self.currentBet += amount - self.currentBet
         self.pot += amount
 
     def call(self, amount):

@@ -1,3 +1,7 @@
+###################
+# Contains main game loop along with the different modes for each screen.
+###################
+
 from cmu_112_graphics import *
 from Deck import *
 from Player import *
@@ -52,44 +56,44 @@ def players_mousePressed(app, event):
     backY1 = 30
     # this huge block of code all checks for button presses for selecting # of
     # players
-    if (event.x <= app.width/2 - 2*buttonSize and 
-                      event.x >= app.width/2 - 3*buttonSize and
+    if (event.x <= app.width/2 - 2.5*buttonSize and 
+                      event.x >= app.width/2 - 3.5*buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 2
         app.mode = "settings"
-    elif (event.x <= app.width/2 - buttonSize and 
-                      event.x >= app.width/2 - 2*buttonSize and
+    elif (event.x <= app.width/2 - 1.5 * buttonSize and 
+                      event.x >= app.width/2 - 2.5*buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 3
         app.mode = "settings"
-    elif (event.x <= app.width/2 and 
-                      event.x >= app.width/2 - buttonSize and
+    elif (event.x <= app.width/2 - 0.5 * buttonSize and 
+                      event.x >= app.width/2 - 1.5 * buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 4
         app.mode = "settings"
-    elif (event.x <= app.width/2 + buttonSize and 
-                      event.x >= app.width/2 and
+    elif (event.x <= app.width/2 + 0.5 * buttonSize and 
+                      event.x >= app.width/2 - 0.5 * buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 5
         app.mode = "settings"
-    elif (event.x <= app.width/2 + 2 * buttonSize and 
-                      event.x >= app.width/2 + buttonSize and
+    elif (event.x <= app.width/2 + 1.5 * buttonSize and 
+                      event.x >= app.width/2 + 0.5 * buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 6
         app.mode = "settings"
-    elif (event.x <= app.width/2 + 3 * buttonSize and 
-                      event.x >= app.width/2 + 2 * buttonSize and
+    elif (event.x <= app.width/2 + 2.5 * buttonSize and 
+                      event.x >= app.width/2 + 1.5 * buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 7
         app.mode = "settings"
-    elif (event.x <= app.width/2 + 4 * buttonSize and 
-                      event.x >= app.width/2 + 3 * buttonSize and
+    elif (event.x <= app.width/2 + 3.5 * buttonSize and 
+                      event.x >= app.width/2 + 2.5 * buttonSize and
                       event.y <= app.height/2 + buttonSize and 
                       event.y >= app.height/2 - buttonSize):
         app.numPlayers = 8
@@ -126,7 +130,7 @@ def players_redrawAll(app, canvas):
     drawBackButton(app, canvas)
 
 ##########
-# Game
+# game
 #########
 
 def game_newPlayer(app, index = 0):
@@ -211,10 +215,16 @@ def game_getBet(app, invalidInput = False):
     try:
         if invalidInput:
             bet = int(app.getUserInput("Please insert a whole number of dollars."))
+            if bet < app.game.bigBlind:
+                    bet = int(app.getUserInput(f"Please insert a whole number of " + 
+                                        "dollars greater than ${app.game.bigBlind}"))
             return bet
         else:
             bet = int(app.getUserInput("How much would you like to bet? "
                                         + "(type a number)"))
+            if bet < app.game.bigBlind:
+                    bet = int(app.getUserInput(f"Please insert a whole number of " + 
+                                        "dollars greater than ${app.game.bigBlind}"))
             return bet
     except ValueError:
         return game_getBet(app, True)
@@ -227,22 +237,21 @@ def game_botMove(app, name):
                                            app.game.numPlayers,
                                            app.game.currentBet) 
     if app.game.currentBet > 0:
-        app.game.pot += move[0]
+        if move[0] == app.game.currentBet:
+            app.game.call(move[0])
+        elif move[0] > app.game.currentBet:
+            app.game.bet(move[0])
         app.currentMove = move[1]
 
-        if move[0] > 0:
-            if app.game.bet(move[0]) != None:
-                game_botMove(app, name)
     else:
         app.currentMove = move[1]
 
         if move[0] > 0:
-            if app.game.bet(move[0]) != None:
-                game_botMove(app, name)
+            app.game.bet(move[0])
+
     app.game.players[name].played = True
 
 def game_playStage(app, pos):
-    print(pos)
     hit = False
     for name in app.game.players:
         if app.game.getNumberPlaying()[0] == 1:
@@ -263,16 +272,14 @@ def game_playStage(app, pos):
     
     for name in app.game.players:
         currPlayer = app.game.players[name]
-        print(f"{app.game.currentBet=}")
 
         if (currPlayer.played and currPlayer.playing and 
             currPlayer.currentBet < app.game.currentBet):
+
             currPlayer.played = False
-            print(f"------{currPlayer=}")
             hit = True
 
         if not currPlayer.played and currPlayer.playing:
-            print(f"{currPlayer=}")
             hit = True
 
     if hit:
@@ -302,10 +309,11 @@ def game_playPreFlop(app):
         app.board += app.game.dealFlop()
         app.proceed = False
         for i in range(app.game.numPlayers):
-            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            tempPos = (app.game.numPlayers - (2 - i)) % app.game.numPlayers
             
             for name in app.game.players:
                 currPlayer = app.game.players[name]
+                print(f"{name}")
                 if currPlayer.playing and currPlayer.position == tempPos:
                     app.pos = tempPos
                     return
@@ -322,7 +330,7 @@ def game_playFlop(app):
         app.board.append(app.game.dealTurnOrRiver())
         app.proceed = False
         for i in range(app.game.numPlayers):
-            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            tempPos = (app.game.numPlayers - (2 - i)) % app.game.numPlayers
             
             for name in app.game.players:
                 currPlayer = app.game.players[name]
@@ -342,7 +350,7 @@ def game_playTurn(app):
         app.board.append(app.game.dealTurnOrRiver())
         app.proceed = False
         for i in range(app.game.numPlayers):
-            tempPos = (app.game.numPlayers - (i + 2)) % app.game.numPlayers
+            tempPos = (app.game.numPlayers - (2 - i)) % app.game.numPlayers
             
             for name in app.game.players:
                 currPlayer = app.game.players[name]
@@ -475,7 +483,7 @@ def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
     blindY = centerY + r * math.sin(cardAngle)
     blindR = 40
     canvas.create_oval(blindX, blindY, blindX+blindR, blindY+blindR, 
-                        fill = "blue")
+                        fill = "cyan")
     canvas.create_text(blindX + blindR/2, blindY + blindR/2, 
                         font = "courier 20 bold",
                         text = "BB")
@@ -570,7 +578,8 @@ def game_drawConsole(app, canvas):
     textX = app.width/2
     textY = app.height/10
     canvas.create_text(textX, textY, font = "courier 18 bold", 
-                       text = app.currentMove)
+                       text = app.currentMove,
+                       fill = "light gray")
 
 def game_drawPot(app, canvas):
     if app.game.pot == 0:
@@ -578,55 +587,72 @@ def game_drawPot(app, canvas):
     else:
         canvas.create_text(app.width/2, app.height * 2/3, 
                            font = "courier 18 bold",
-                           text = f"Pot: ${app.game.pot}")
+                           text = f"Pot: ${app.game.pot}",
+                           fill = "light gray")
 
 def game_drawCheckButton(app, canvas):
+    if app.isPlayerMove:
+        color = "light gray"
+    else:
+        color = "dark gray"
     buttonWidth = app.width/20
     buttonHeight = app.height/15
     buttonX0 = app.width - buttonWidth * 1.1
     buttonY0 = app.height - buttonHeight * 4
 
     canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
-                            buttonY0 + buttonHeight, fill = "light gray",
+                            buttonY0 + buttonHeight, fill = color,
                             width = 5)
     canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
                         font = f"courier 20 bold",
                         text = "Check")
 
 def game_drawCallButton(app, canvas):
+    if app.isPlayerMove:
+        color = "light gray"
+    else:
+        color = "gray"
     buttonWidth = app.width/20
     buttonHeight = app.height/15
     buttonX0 = app.width - buttonWidth * 1.1
     buttonY0 = app.height - buttonHeight * 4
 
     canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
-                            buttonY0 + buttonHeight, fill = "light gray",
+                            buttonY0 + buttonHeight, fill = color,
                             width = 5)
     canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
                         font = f"courier 20 bold",
                         text = "Call")
 
 def game_drawBetButton(app, canvas):
+    if app.isPlayerMove:
+        color = "red"
+    else:
+        color = "red4"
     buttonWidth = app.width/20
     buttonHeight = app.height/15
     buttonX0 = app.width - buttonWidth * 1.1
     buttonY0 = app.height - buttonHeight * 3
 
     canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
-                            buttonY0 + buttonHeight, fill = "red",
+                            buttonY0 + buttonHeight, fill = color,
                             width = 5)
     canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
                         font = f"courier 20 bold",
                         text = "Bet")
 
 def game_drawFoldButton(app, canvas):
+    if app.isPlayerMove:
+        color = "yellow"
+    else:
+        color = "yellow4"
     buttonWidth = app.width/20
     buttonHeight = app.height/15
     buttonX0 = app.width - buttonWidth * 1.1
     buttonY0 = app.height - buttonHeight * 2
 
     canvas.create_rectangle(buttonX0, buttonY0, buttonX0 + buttonWidth, 
-                            buttonY0 + buttonHeight, fill = "Yellow",
+                            buttonY0 + buttonHeight, fill = color,
                             width = 5)
     canvas.create_text(buttonX0 + buttonWidth/2, buttonY0 + buttonHeight/2,
                         font = f"courier 20 bold",
@@ -652,6 +678,11 @@ def game_redrawAll(app, canvas):
         canvas.create_text(app.width/2, app.height/2, 
                             font = "courier 18 bold",
                             text = "press enter to play!")
+    
+    if app.isPlayerMove:
+        canvas.create_text(app.width/4, app.height/10,
+                           font = "courier 20 bold",
+                           text = f"{app.currentPlayer}'s move")
 
 ###########
 # pause
@@ -687,10 +718,10 @@ def gameOver_redrawAll(app, canvas):
     canvas.create_text(app.width/2, 30, fold = "courier 30 bold",
                         text = "Game Over!")
     canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
-                        text= "Return to Main Menu")
-def gameOver_keyPressed(app, event):
-    if event.key == "Enter":
-        app.mode = "game"
+                        text= "Click anywhere to return to Main Menu")
+
+def gameOver_mousePressed(app, event):
+    app.mode = "splash"
 
 #############
 # settings
@@ -703,25 +734,27 @@ def settings_keyPressed(app, event):
 def settings_mousePressed(app, event):
     buttonWidth = app.width/10
     buttonHeight = app.height/10
+    pButtonY0 = 40
+
     if (event.x <= 80 and event.x >= 5 and
     event.y <= 30 and event.y >= 5):
         app.mode = "splash"
 
-    if (event.x <= app.width/2 + buttonWidth and 
-        event.x >= app.width/2 - buttonWidth and
-        event.y <= 40 + 2 * buttonHeight and 
-        event.y >= 40 + buttonHeight):
+    if (event.x <= app.width/2 + buttonWidth and event.x >= app.width/2 - buttonWidth and
+    event.y <= pButtonY0 + 2 * buttonHeight and event.y >= pButtonY0 + buttonHeight):
         app.mode = "players"
+    
 
 def settings_drawPlayersButton(app, canvas):
     buttonWidth = app.width/10
     buttonHeight = app.height/10
+    buttonY0 = 40
 
-    canvas.create_rectangle(app.width/2 - buttonWidth, 40 + buttonHeight,
-                            app.width/2 + buttonWidth, 40 + 2 * buttonHeight,
+    canvas.create_rectangle(app.width/2 - buttonWidth, buttonY0 + buttonHeight,
+                            app.width/2 + buttonWidth, buttonY0 + 2 * buttonHeight,
                             fill = "light gray")
-    canvas.create_text(app.width/2, 40 + 1.5 * buttonHeight, 
-                        font = "courier 14", fill = "black",
+    canvas.create_text(app.width/2, buttonY0 + 1.5 * buttonHeight, 
+                        font = "courier 14 bold", fill = "black",
                         text = "Select Number of Players")
 
 def settings_redrawAll(app, canvas):
@@ -730,9 +763,6 @@ def settings_redrawAll(app, canvas):
                         text = "Settings")
     settings_drawPlayersButton(app, canvas)
     drawBackButton(app, canvas)
-
-def settings_keyPressed(app, event):
-    pass
 
 ##############
 # Main Stuff
