@@ -8,6 +8,7 @@ from Player import *
 from PokerGame import *
 
 import math
+import time
 
 ###########
 # Start Screen
@@ -26,7 +27,7 @@ def splash_redrawAll(app, canvas):
     canvas.create_rectangle(app.width/2 - 80, app.height/2 + 40, 
                             app.width/2 + 80, app.height/2 + 60,
                             fill = "light gray")
-    canvas.create_text(app.width/2, app.height/2+50, font = "Courier 20",
+    canvas.create_text(app.width/2, app.height/2+50, font = "Courier 16 bold",
                         text = "Settings")
 
 def splash_mousePressed(app, event):
@@ -129,25 +130,129 @@ def players_redrawAll(app, canvas):
     players_drawSelection(app, canvas)
     drawBackButton(app, canvas)
 
+###########
+# users
+###########
+
+def users_mousePressed(app, event):
+    buttonSize = 30
+    backX0 = 5
+    backY0 = 5
+    backX1 = 80
+    backY1 = 30
+    # this huge block of code all checks for button presses for selecting # of
+    # users
+    if (event.x <= app.width/2 - 3*buttonSize and 
+                      event.x >= app.width/2 - 4*buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 1
+        app.mode = "settings"
+    elif (event.x <= app.width/2 - 2*buttonSize and 
+                      event.x >= app.width/2 - 3*buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 2
+        app.mode = "settings"
+    elif (event.x <= app.width/2 - buttonSize and 
+                      event.x >= app.width/2 - 2*buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 3
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+    elif (event.x <= app.width/2 and 
+                      event.x >= app.width/2 - buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 4
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + buttonSize and 
+                      event.x >= app.width/2 and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 5
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 2 * buttonSize and 
+                      event.x >= app.width/2 + buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 6
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 3 * buttonSize and 
+                      event.x >= app.width/2 + 2 * buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 7
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+    elif (event.x <= app.width/2 + 4 * buttonSize and 
+                      event.x >= app.width/2 + 3 * buttonSize and
+                      event.y <= app.height/2 + buttonSize and 
+                      event.y >= app.height/2 - buttonSize):
+        app.numUsers = 8
+        if app.numUsers > app.numPlayers:
+                app.numPlayers = app.numUsers
+        app.mode = "settings"
+
+    if (event.x <= backX1 and event.x >= backX0 and
+        event.y <= backY1 and event.y >= backY0):
+        app.mode = "splash"
+
+def users_drawSelection(app, canvas):
+    buttonSize = 30
+    canvas.create_text(app.width/2, 30, 
+                        font = "Courier 30 bold",
+                        fill = "light gray",
+                        text = "How many users would you like?")
+
+    for i in range(0,8):
+        canvas.create_rectangle(app.width/2 + (i-4.5) * buttonSize, 
+                                app.height/2 - buttonSize,
+                                app.width/2 + (i-3.5) * buttonSize,
+                                app.height/2 + buttonSize,
+                                fill = "light gray",
+                                outline = "black")
+
+        canvas.create_text(app.width/2 + (i-4.5) * buttonSize + buttonSize/2, 
+                            app.height/2, 
+                            font = "courier 20 bold",
+                            fill = "black",
+                            text = f"{i+1}")
+
+def users_redrawAll(app, canvas):
+    canvas.create_rectangle(0,0, app.width, app.height, fill = "dark green")
+    users_drawSelection(app, canvas)
+    drawBackButton(app, canvas)
+
+
 ##########
 # game
 #########
 
-def game_newPlayer(app, index = 0):
+def game_newPlayer(app, index, botIndex = 0):
     hand = app.game.dealHand()
-    if len(app.game.players) == 0:
-        name = app.getUserInput("What is your name?")
 
+    if index < app.numUsers:
+        name = app.getUserInput("What is your name?")
         if name == None:
             name = app.getUserInput("Please Re-enter your name")
         if name == None:
-            name = "Player 1"
+            name = f"Player {index + 1}"
 
-        app.game.addPlayer(Player(hand, len(app.game.players), name))
+        app.game.addPlayer(Player(hand, index, name))
     else:
-        name = Bot.names[index]
-        app.game.addPlayer(Bot(hand, len(app.game.players), name))
-        index += 1
+        name = Bot.names[botIndex]
+        app.game.addPlayer(Bot(hand, index, name))
+        botIndex += 1
 
 def game_keyPressed(app, event):
     if event.key == "Enter" and not app.play and app.enterPressed:
@@ -252,6 +357,7 @@ def game_botMove(app, name):
     app.game.players[name].played = True
 
 def game_playStage(app, pos):
+    print(app.pos)
     hit = False
     for name in app.game.players:
         if app.game.getNumberPlaying()[0] == 1:
@@ -263,6 +369,7 @@ def game_playStage(app, pos):
                 not app.game.players[name].played):
                 app.currentPlayer = name
                 game_playerMove(app, name)
+                time.sleep(1)
             elif (type(app.game.players[name]) == Bot and 
                 app.game.players[name].playing and not
                 app.game.players[name].played):
@@ -383,8 +490,13 @@ def game_timerFired(app):
 
     if not app.isPlayerMove:
         if app.start:
+            botIndex = 0
             for i in range(app.numPlayers):
-                game_newPlayer(app, i-1)
+                if i >= app.numUsers:
+                    game_newPlayer(app, i, botIndex)
+                    botIndex += 1
+                else:
+                    game_newPlayer(app, i)
             app.start = False
 
         if len(app.game.players) == 1:
@@ -466,10 +578,12 @@ def game_drawPlayers(app, canvas):
                              centerX, centerY, index, folded)
         else:
             if app.game.players[name].playing:
-                game_drawPlayerHand(app, canvas, name)
+                game_drawPlayerHand(app, canvas, name, cardAngle, 
+                             centerX, centerY, index)
             else:
                 folded = True
-                game_drawPlayerHand(app, canvas, name, folded)
+                game_drawPlayerHand(app, canvas, name, cardAngle, 
+                             centerX, centerY, index, folded)
         index += 1
 
 def game_drawBigBlind(app, canvas, cardAngle, centerX, centerY, index):
@@ -522,32 +636,41 @@ def game_drawDealerChip(app, canvas, cardAngle, centerX, centerY, index):
 
 def game_drawBotHand(app, canvas, name, cardAngle, centerX, 
                      centerY, index, folded = False):
-        cardAngle += math.pi/4 * index
-        numerator = app.width/3 * app.height/3
-        denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
+    cardAngle += math.pi/4 * index
+    numerator = app.width/3 * app.height/3
+    denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
                                     (app.height/3)**2 * math.cos(cardAngle)**2)
-        r = numerator/denominator
-        cardX = centerX + r * math.cos(cardAngle)
-        cardY = centerY + r * math.sin(cardAngle)
-        nameY = cardY + 40
-        chipsY = nameY + 14
+    r = numerator/denominator
+    cardX = centerX + r * math.cos(cardAngle)
+    cardY = centerY + r * math.sin(cardAngle)
+    nameY = cardY + 40
+    chipsY = nameY + 14
 
-        if folded:
-            canvas.create_text(cardX, cardY, font = "courier 20 bold",
-                                text = "Folded")
-        else:
-            game_drawCard(app, canvas, cardX, cardY)
-        canvas.create_text(cardX, chipsY, font = "courier 14 bold",
-                        text = f"${app.game.players[name].balance}")
-        canvas.create_text(cardX, nameY, font = "courier 14 bold",
-                            text = f"{name}")
+    if folded:
+        canvas.create_text(cardX, cardY, font = "courier 20 bold",
+                            text = "Folded")
+    else:
+        game_drawCard(app, canvas, cardX, cardY)
+    canvas.create_text(cardX, chipsY, font = "courier 14 bold",
+                    text = f"${app.game.players[name].balance}")
+    canvas.create_text(cardX, nameY, font = "courier 14 bold",
+                        text = f"{name}")
 
-def game_drawPlayerHand(app, canvas, name, folded = False):
-    index = 0
+def game_drawPlayerHand(app, canvas, name, cardAngle, centerX, 
+                     centerY, index, folded = False):
+    j = 0
     cardWidth = 73
     cardHeight = 98
-    nameY = app.height-34
-    chipsY = app.height - 20
+    cardAngle += math.pi/4 * index
+    numerator = app.width/3 * app.height/3
+    denominator = math.sqrt((app.width/3)**2 * math.sin(cardAngle)**2 + 
+                                (app.height/3)**2 * math.cos(cardAngle)**2)
+
+    r = numerator/denominator
+    cardX = centerX + r * math.cos(cardAngle)
+    cardY = centerY + r * math.sin(cardAngle)
+    nameY = cardY + 40
+    chipsY = nameY + 14
 
     for card in app.game.players[name].hand:
         num = app.numberMap[card.number]
@@ -556,21 +679,28 @@ def game_drawPlayerHand(app, canvas, name, folded = False):
         cY = cardHeight * suit
 
         if folded:
-            canvas.create_text(app.width/2, app.height - 100, 
+            canvas.create_text(cardX, cardY, 
                                font = "courier 20 bold",
                                text = "Folded")
             break
         else:
-            image = app.cardImage2.crop((cX, cY, 
-                                        cX + cardWidth, cY + cardHeight))
-            image = app.scaleImage(image, 7/8)
-            photoImage = getCachedPhotoImage(app, image)
-            canvas.create_image(app.width/2 + index * cardWidth/3, app.height-100,
-                                image = photoImage)
-        index += 1
-    canvas.create_text(app.width/2, nameY, font = "courier 14 bold",
+            if app.pos == app.game.players[name].position+1:
+                canvas.create_text(app.width/4, app.height/10,
+                           font = "courier 20 bold",
+                           text = f"{app.currentPlayer}'s move")
+                image = app.cardImage2.crop((cX, cY, 
+                                            cX + cardWidth, cY + cardHeight))
+                image = app.scaleImage(image, 7/8)
+                photoImage = getCachedPhotoImage(app, image)
+                canvas.create_image(cardX + j * cardWidth/3, cardY,
+                                    image = photoImage)
+            else:
+                game_drawCard(app, canvas, cardX + j * cardWidth/3, cardY)
+        j += 1
+
+    canvas.create_text(cardX, nameY, font = "courier 14 bold",
                        text = name)
-    canvas.create_text(app.width/2, chipsY, font = "courier 14 bold",
+    canvas.create_text(cardX, chipsY, font = "courier 14 bold",
                        text = f"${app.game.players[name].balance}")
 
 def game_drawConsole(app, canvas):
@@ -678,11 +808,6 @@ def game_redrawAll(app, canvas):
         canvas.create_text(app.width/2, app.height/2, 
                             font = "courier 18 bold",
                             text = "press enter to play!")
-    
-    if app.isPlayerMove:
-        canvas.create_text(app.width/4, app.height/10,
-                           font = "courier 20 bold",
-                           text = f"{app.currentPlayer}'s move")
 
 ###########
 # pause
@@ -734,11 +859,16 @@ def settings_keyPressed(app, event):
 def settings_mousePressed(app, event):
     buttonWidth = app.width/10
     buttonHeight = app.height/10
-    pButtonY0 = 40
+    pButtonY0 = app.height/8
+    uButtonY0 = app.height/2
 
     if (event.x <= 80 and event.x >= 5 and
     event.y <= 30 and event.y >= 5):
         app.mode = "splash"
+
+    if (event.x <= app.width/2 + buttonWidth and event.x >= app.width/2 - buttonWidth and
+    event.y <= uButtonY0 + 2 * buttonHeight and event.y >= uButtonY0 + buttonHeight):
+        app.mode = "users"
 
     if (event.x <= app.width/2 + buttonWidth and event.x >= app.width/2 - buttonWidth and
     event.y <= pButtonY0 + 2 * buttonHeight and event.y >= pButtonY0 + buttonHeight):
@@ -748,7 +878,7 @@ def settings_mousePressed(app, event):
 def settings_drawPlayersButton(app, canvas):
     buttonWidth = app.width/10
     buttonHeight = app.height/10
-    buttonY0 = 40
+    buttonY0 = app.height/8
 
     canvas.create_rectangle(app.width/2 - buttonWidth, buttonY0 + buttonHeight,
                             app.width/2 + buttonWidth, buttonY0 + 2 * buttonHeight,
@@ -756,12 +886,31 @@ def settings_drawPlayersButton(app, canvas):
     canvas.create_text(app.width/2, buttonY0 + 1.5 * buttonHeight, 
                         font = "courier 14 bold", fill = "black",
                         text = "Select Number of Players")
+    canvas.create_text(app.width/2, buttonY0 + 1.6 * buttonHeight,
+                       font = "courier 10 bold", fill = "black",
+                       text = f"Current: {app.numPlayers}")
+
+def settings_drawUsersButton(app, canvas):
+    buttonWidth = app.width/10
+    buttonHeight = app.height/10
+    buttonY0 = app.height/2
+
+    canvas.create_rectangle(app.width/2 - buttonWidth, buttonY0 + buttonHeight,
+                            app.width/2 + buttonWidth, buttonY0 + 2 * buttonHeight,
+                            fill = "light gray")
+    canvas.create_text(app.width/2, buttonY0 + 1.5 * buttonHeight, 
+                        font = "courier 14 bold", fill = "black",
+                        text = "Select Number of Users")
+    canvas.create_text(app.width/2, buttonY0 + 1.6 * buttonHeight,
+                       font = "courier 10 bold", fill = "black",
+                       text = f"Current: {app.numUsers}")
 
 def settings_redrawAll(app, canvas):
     canvas.create_rectangle(0,0,app.width, app.height, fill = "dark green")
     canvas.create_text(app.width/2, 20, font = "courier 30 bold",
                         text = "Settings")
     settings_drawPlayersButton(app, canvas)
+    settings_drawUsersButton(app, canvas)
     drawBackButton(app, canvas)
 
 ##############
@@ -797,6 +946,7 @@ def appStarted(app):
     app.numPlayers = 8
     app.currentPlayer = ""
     app.isPlayerMove = False
+    app.numUsers = 1
 
 # from notes @ https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#cachingPhotoImages
 def getCachedPhotoImage(app, image):

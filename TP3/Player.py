@@ -53,10 +53,10 @@ class Player:
 
 class Bot(Player):
     names = ["Bill", "Nancy", "John", "Steven", "Chris", "Jane", "Alex"]
+    
     def __init__(self, hand, position, name):
         super().__init__(hand, position, name)
         self.tightness = random.randint(1,3)
-        self.minimumPlayable = 2
         self.name = name
 
     def __repr__(self):
@@ -110,6 +110,7 @@ class Bot(Player):
         return numOuts     
 
     def calculateHandStrength(self, board):
+
         handScore = self.deck.calculateHandScore(self.hand, board)
         return handScore[0]
 
