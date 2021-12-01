@@ -35,7 +35,7 @@ class Player:
             self.currentBet += bet
         else:
             self.currentBet += self.balance
-            return self.balance
+            return self.balance, f"{self.name} goes all in"
         return bet, f"{self.name} raises {bet} chips"
 
     def fold(self):
@@ -54,7 +54,7 @@ class Bot(Player):
         self.name = name
 
     def __repr__(self):
-        return (f"I am level {self.tightness}, sitting at {self.position}" + 
+        return (f"I am {self.name}, level {self.tightness}, sitting at {self.position}" + 
                 f" and my hand is {str(self.hand)} with {self.balance} chips")
     
     #next 2 methods for tp2

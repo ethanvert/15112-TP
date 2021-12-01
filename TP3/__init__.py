@@ -229,22 +229,25 @@ def game_botMove(app, name):
     if app.game.currentBet > 0:
         app.game.pot += move[0]
         app.currentMove = move[1]
+
+        if move[0] > 0:
+            if app.game.bet(move[0]) != None:
+                game_botMove(app, name)
     else:
         app.currentMove = move[1]
 
         if move[0] > 0:
             if app.game.bet(move[0]) != None:
                 game_botMove(app, name)
-            else:
-                app.game.bet(move[0])
     app.game.players[name].played = True
 
 def game_playStage(app, pos):
+    print(pos)
     hit = False
     for name in app.game.players:
         if app.game.getNumberPlaying()[0] == 1:
             break
-        
+
         if app.game.players[name].position == pos:
             if (type(app.game.players[name]) == Player and 
                 app.game.players[name].playing and
@@ -263,12 +266,16 @@ def game_playStage(app, pos):
 
     for name in app.game.players:
         currPlayer = app.game.players[name]
+        
 
         if (currPlayer.played and currPlayer.playing and 
             currPlayer.currentBet < app.game.currentBet):
             currPlayer.played = False
+            print(f"------{currPlayer=}")
             hit = True
+
         if not currPlayer.played and currPlayer.playing:
+            print(f"{currPlayer=}")
             hit = True
 
     if hit:
@@ -289,7 +296,6 @@ def game_playPreFlop(app):
         if game_playStage(app, app.pos) != None:
             app.pos += 1
         app.pos = app.pos % app.game.numPlayers
-        print(app.pos)
     else:
         app.turn += 1
         app.stage = app.turn % 4
