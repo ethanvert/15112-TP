@@ -813,14 +813,39 @@ def game_redrawAll(app, canvas):
 # pause
 ###########
 
+def pause_keyPressed(app, event):
+    if event.key == "Enter" or event.key == "Escape":
+        app.mode = "game"
+    if event.key == "h":
+        app.mode = "help"
+
 def pause_redrawAll(app, canvas):
     canvas.create_rectangle(0,0,app.width, app.height, fill = "dark green")
     canvas.create_text(app.width/2, app.height/2, font = "courier 26 bold", 
                         text= "Paused, press enter or esc to resume")
+    canvas.create_text(app.width/2, app.height/1.1, font = "courier 26 bold", 
+                        text= "Press H for help with hands")
 
-def pause_keyPressed(app, event):
-    if event.key == "Enter" or event.key == "Escape":
-        app.mode = "game"
+##########
+# help
+##########
+
+def help_keyPressed(app, event):
+    if event.key == "Escape":
+        app.mode = "pause"
+
+def help_mousePressed(app, event):
+    if (event.x <= app.width/20 and event.x >= app.width/400 and
+        event.y <= app.height/40 and event.y >= app.height/200):
+        app.mode = "pause"
+
+def help_redrawAll(app, canvas):
+    canvas.create_text(app.width/4, app.height/10, font = "courier 20 bold",
+                       text = "Press Esc to return to Pause menu")
+    image = app.helpImage
+    photoImage = getCachedPhotoImage(app, image)
+    canvas.create_image(app.width/2, app.height/2, image=photoImage)
+    drawBackButton(app, canvas)
 
 ##############
 # gameOver
@@ -904,18 +929,15 @@ def settings_redrawAll(app, canvas):
 # Main Stuff
 ##############
 
-def drawBackButton(app, canvas):
-    canvas.create_rectangle(app.width/20,app.height/200, app.width/400,app.height/40, fill = "light gray")
-    fontSize = app.width//150
-    canvas.create_text(10, 10, font = f"courier {fontSize} bold",
-                        text = "<= back", anchor = "nw")
-
 def appStarted(app):
     url1 = ("https://s3.amazonaws.com/images.penguinmagic.com/"
             +"images/products/original/8006b.jpg")
     app.cardImage1 = app.loadImage(url1)
     url2 = ("http://www.milefoot.com/math/discrete/counting/images/cards.png")
     app.cardImage2 = app.loadImage(url2)
+    url3 = ("https://www.pokerjunkie.com/assets/Uploads/Articles/_resampled/" + 
+            "ResizedImage_420_558_1-PokerHandRanking.jpg")
+    app.helpImage = app.loadImage(url3)
     app.numberMap = {"Ace":0, "2":1, "3":2, "4":3, "5":4, "6":5, "7":6,
                    "8":7, "9":8, "10":9, "Jack":10, "Queen":11, "King":12}
     app.suitMap = {"Clubs":0, "Spades":1, "Hearts":2, "Diamonds":3}
@@ -935,6 +957,12 @@ def appStarted(app):
     app.currentPlayer = ""
     app.isPlayerMove = False
     app.numUsers = 1
+
+def drawBackButton(app, canvas):
+    canvas.create_rectangle(app.width/20,app.height/200, app.width/400,app.height/40, fill = "light gray")
+    fontSize = app.width//150
+    canvas.create_text(10, 10, font = f"courier {fontSize} bold",
+                        text = "<= back", anchor = "nw")
 
 # from notes @ https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#cachingPhotoImages
 def getCachedPhotoImage(app, image):
