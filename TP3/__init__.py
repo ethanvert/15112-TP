@@ -814,26 +814,13 @@ def game_redrawAll(app, canvas):
 ###########
 
 def pause_redrawAll(app, canvas):
+    canvas.create_rectangle(0,0,app.width, app.height, fill = "dark green")
     canvas.create_text(app.width/2, app.height/2, font = "courier 26 bold", 
                         text= "Paused, press enter or esc to resume")
 
 def pause_keyPressed(app, event):
     if event.key == "Enter" or event.key == "Escape":
         app.mode = "game"
-    if event.key == "h":
-        app.mode = "help"
-
-###############
-# help
-##############
-
-def help_redrawAll(app, canvas):
-    canvas.create_text(app.width/2, app.height/2, font = "Arial 26", 
-                        text= "What do you need help with?")
-
-def help_keyPressed(app, event):
-    if event.key == "Space":
-        app.mode = "pause"
 
 ##############
 # gameOver
